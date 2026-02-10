@@ -70,6 +70,12 @@
         }
         .legend-item { display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
         .legend-color { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+        
+        /* Badge circular para percentual com escala de cores */
+        .percent-badge {
+            @apply w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2;
+            transition: all 0.2s;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
@@ -487,6 +493,27 @@
             return applicable > 0 ? Math.round((successes / applicable) * 100) : 0;
         }
 
+        // Função para obter cor baseada no percentual de atingimento
+        function getComplianceColor(percent) {
+            if (percent >= 90) return '#16a34a'; // Verde escuro
+            if (percent >= 80) return '#22c55e'; // Verde
+            if (percent >= 70) return '#84cc16'; // Verde claro
+            if (percent >= 60) return '#eab308'; // Amarelo
+            if (percent >= 50) return '#f97316'; // Laranja
+            if (percent >= 40) return '#ef4444'; // Vermelho
+            if (percent >= 30) return '#dc2626'; // Vermelho escuro
+            if (percent >= 20) return '#b91c1c'; // Vermelho mais escuro
+            if (percent >= 10) return '#991b1b'; // Vermelho muito escuro
+            return '#7f1d1d'; // Vermelho quase preto
+        }
+
+        // Função para obter cor do texto baseada no percentual
+        function getTextColor(percent) {
+            if (percent >= 70) return '#ffffff'; // Texto branco para fundos escuros
+            if (percent >= 40) return '#1e293b'; // Texto escuro para fundos claros
+            return '#ffffff'; // Texto branco para fundos escuros
+        }
+
         function handleSort(key) {
             if (currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
             else { currentSort.key = key; currentSort.dir = 'asc'; }
@@ -520,13 +547,15 @@
 
             sorted.forEach(item => {
                 const compliance = calculateCompliance(item);
+                const backgroundColor = getComplianceColor(compliance);
+                const textColor = getTextColor(compliance);
+                
                 const row = `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-4 py-3.5 font-bold text-slate-800 sticky left-0 bg-white z-10 border-r border-b">${item.id}</td>
-                        <td class="px-3 py-3.5 border-b">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-[10px] w-6">${compliance}%</span>
-                                <div class="w-10 h-1 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500" style="width: ${compliance}%"></div></div>
+                        <td class="px-3 py-3.5 border-b text-center">
+                            <div class="percent-badge" style="background-color: ${backgroundColor}; border-color: ${backgroundColor}; color: ${textColor}">
+                                ${compliance}%
                             </div>
                         </td>
                         <td class="px-3 py-3.5 text-slate-500 border-b">${item.nat}</td>
