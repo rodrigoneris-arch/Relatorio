@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Executivo de Infraestrutura e RH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .status-badge { @apply px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border; }
+        
+        .sit-adequada { @apply bg-green-600 text-white border-green-700 shadow-sm; }
+        .sit-inadequada { @apply bg-orange-400 text-white border-orange-500 shadow-sm; }
+        .sit-nao-ocupado { @apply bg-red-600 text-white border-red-700 shadow-sm; }
+        .sit-contratacao { @apply bg-blue-500 text-white border-blue-600 shadow-sm; }
+        
+        .bg-ok { @apply bg-green-100 text-green-800 border-green-200; }
+        .bg-warning { @apply bg-yellow-100 text-yellow-800 border-yellow-200; }
+        .bg-error { @apply bg-red-100 text-red-800 border-red-200; }
+        .bg-neutral { @apply bg-slate-100 text-slate-500 border-slate-200; }
+        
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        #map { height: 450px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+        .city-label { background: transparent !important; border: none !important; box-shadow: none !important; font-weight: 700 !important; font-size: 11px !important; color: #1e293b !important; text-shadow: 0 0 4px white, 0 0 4px white, 0 0 4px white !important; white-space: nowrap; padding: 0 !important; }
+        
+        th.sortable { cursor: pointer; transition: background 0.2s; position: relative; }
+        th.sortable:hover { @apply bg-slate-800; }
+        .sort-icon { display: inline-block; margin-left: 4px; opacity: 0.3; }
+        th.active-sort .sort-icon { opacity: 1; color: #3b82f6; }
+        
+        /* Estilo Caixas de Seleção (Abas) - ATUALIZADO */
+        .tab-box { 
+            @apply px-6 py-3 rounded-lg border-2 border-slate-200 font-bold transition-all uppercase text-xs tracking-widest bg-white;
+            color: #64748b; /* Cor padrão para abas não selecionadas - cinza */
+        }
+        .tab-box.active { 
+            @apply border-slate-900 bg-slate-50 shadow-md;
+            color: #1e293b; /* Cor para aba selecionada - preto azulado */
+        }
+        /* Cores específicas para cada aba */
+        .tab-infra { border-left-color: #3b82f6; }
+        .tab-infra.active { background-color: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+        .tab-rh { border-left-color: #10b981; }
+        .tab-rh.active { background-color: #f0fdf4; border-color: #10b981; color: #047857; }
+
+        /* Legenda do Mapa */
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <div class="max-w-[1650px] mx-auto px-4 py-8">
+        <!-- Cabeçalho -->
+        <header class="mb-6 border-b border-slate-200 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Interno</span>
+                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight uppercase">Dashboard Corporativo v4.0</h1>
+                </div>
+                <p class="text-slate-500">Gestão Integrada de Infraestrutura, Mobiliário e Recursos Humanos</p>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-xs font-bold text-slate-400 uppercase">Sincronização</span>
+                <span class="bg-white border border-slate-200 px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm">10 FEV 2026</span>
+            </div>
+        </header>
+
+        <!-- Navegação por Caixas de Seleção -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <button onclick="switchTab('infra')" id="btn-infra" class="tab-box tab-infra active">Infraestrutura & Mobiliário</button>
+            <button onclick="switchTab('rh')" id="btn-rh" class="tab-box tab-rh">Gestão de Pessoas (Vagas)</button>
+        </div>
+
+        <!-- CONTEÚDO: INFRAESTRUTURA -->
+        <div id="tab-infra-content">
+            <!-- Widgets de Infra -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Situação Geral</h3>
+                    <div class="h-[180px] flex justify-center items-center">
+                        <canvas id="situationChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Natureza Jurídica</h3>
+                    <div class="h-[180px] flex justify-center items-center">
+                        <canvas id="natureChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Mobiliário</h3>
+                    <div class="h-[180px] flex justify-center items-center">
+                        <canvas id="mobDetailedChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Atingimento por Serviço (%)</h3>
+                    <div class="h-[180px]">
+                        <canvas id="servicesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mapa com Legenda -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 relative">
+                <div id="map" class="border border-slate-100"></div>
+                <div class="map-legend">
+                    <div class="legend-item"><span class="legend-color bg-green-600"></span> Adequada</div>
+                    <div class="legend-item"><span class="legend-color bg-orange-400"></span> Inadequada</div>
+                    <div class="legend-item"><span class="legend-color bg-red-600"></span> Não Ocupado</div>
+                    <div class="legend-item"><span class="legend-color bg-blue-500"></span> Contratação</div>
+                </div>
+            </div>
+
+            <!-- Filtros Infra - ATUALIZADO com Menu Suspenso de Município -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-end">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Município Sede</label>
+                    <select id="municipioFilter" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
+                        <option value="all">Todos os Municípios</option>
+                        <!-- Opções serão preenchidas dinamicamente -->
+                    </select>
+                </div>
+                <div class="w-48">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Natureza Jurídica</label>
+                    <select id="natureFilter" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
+                        <option value="all">Todas as Naturezas</option>
+                        <option value="Coworking">Coworking</option>
+                        <option value="Locado - CNPJ">Locado - CNPJ</option>
+                        <option value="Locado - CPF">Locado - CPF</option>
+                        <option value="Edif. Público">Edifício Público</option>
+                    </select>
+                </div>
+                <div class="w-48">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Situação Final</label>
+                    <select id="situacaoFilter" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
+                        <option value="all">Todas as Situações</option>
+                        <option value="Adequada">Adequada</option>
+                        <option value="Inadequada">Inadequada</option>
+                        <option value="Não ocupado">Não Ocupado</option>
+                        <option value="Contratação">Contratação</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabela Infra -->
+            <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[500px]">
+                    <table class="w-full text-left text-[11px] border-separate border-spacing-0" id="infraTable">
+                        <thead class="bg-slate-900 text-white uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="px-4 py-4 sticky left-0 top-0 bg-slate-900 z-40 border-b border-slate-800 sortable" onclick="handleSort('id')">Município Sede <span class="sort-icon" id="icon-id">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('compliance')">Atingimento <span class="sort-icon" id="icon-compliance">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('nat')">Natureza <span class="sort-icon" id="icon-nat">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('mob')">Mobiliário <span class="sort-icon" id="icon-mob">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('lim')">Limpeza <span class="sort-icon" id="icon-lim">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('jar')">Jardinagem <span class="sort-icon" id="icon-jar">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('int')">Internet <span class="sort-icon" id="icon-int">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('tel')">Telefonia <span class="sort-icon" id="icon-tel">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('vig')">Vigilância <span class="sort-icon" id="icon-vig">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('imp')">Impressão <span class="sort-icon" id="icon-imp">↕</span></th>
+                                <th class="px-4 py-4 text-center sticky top-0 bg-slate-900 z-30 border-b border-slate-800">Situação Final</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO: RECURSOS HUMANOS -->
+        <div id="tab-rh-content" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-700 mb-6 uppercase tracking-wider flex items-center justify-between">
+                        Evolução da Ocupação por Unidade (Total)
+                        <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded">Meta vs Real</span>
+                    </h3>
+                    <div class="h-[350px]">
+                        <canvas id="staffingSummaryChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-center text-center">
+                    <div class="mb-4">
+                        <span class="text-5xl font-black text-blue-600" id="totalFillPercent">0%</span>
+                        <p class="text-xs font-bold text-slate-400 uppercase mt-2">Ocupação Total de Vagas</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-6 border-t pt-6">
+                        <div>
+                            <span class="text-xl font-bold text-slate-700" id="totalMeta">0</span>
+                            <p class="text-[9px] text-slate-400 uppercase">Meta Total</p>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold text-green-600" id="totalReal">0</span>
+                            <p class="text-[9px] text-slate-400 uppercase">Preenchidas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros RH -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 mb-6">
+                <div class="max-w-md">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Pesquisar Unidade de Gestão</label>
+                    <input type="text" id="searchInputRh" placeholder="Filtrar por nome da unidade..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Tabela RH com Ordenação -->
+            <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[600px]">
+                    <table class="w-full text-left text-[11px] border-separate border-spacing-0" id="rhTable">
+                        <thead class="bg-slate-900 text-white uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="px-4 py-4 sticky left-0 top-0 bg-slate-900 z-40 border-b border-slate-800 sortable" onclick="handleSortRh('id')">Unidade de Gestão <span class="sort-icon" id="icon-rh-id">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 text-center sortable" onclick="handleSortRh('mSup')">Superior (Meta) <span class="sort-icon" id="icon-rh-mSup">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 text-center sortable" onclick="handleSortRh('rSup')">Superior (Real) <span class="sort-icon" id="icon-rh-rSup">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 text-center sortable" onclick="handleSortRh('mMed')">Médio (Meta) <span class="sort-icon" id="icon-rh-mMed">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 text-center sortable" onclick="handleSortRh('rMed')">Médio (Real) <span class="sort-icon" id="icon-rh-rMed">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 text-center bg-slate-800 sortable" onclick="handleSortRh('totalMeta')">Total Meta <span class="sort-icon" id="icon-rh-totalMeta">↕</span></th>
+                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 text-center bg-slate-800 sortable" onclick="handleSortRh('totalReal')">Total Real <span class="sort-icon" id="icon-rh-totalReal">↕</span></th>
+                                <th class="px-4 py-4 text-center sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSortRh('isFull')">Vagas Preenchidas? <span class="sort-icon" id="icon-rh-isFull">↕</span></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- VARIÁVEIS GLOBAIS DE ESTADO ---
+        let currentSort = { key: 'id', dir: 'asc' };
+        let rhSort = { key: 'id', dir: 'asc' };
+        let rhChartInstance = null;
+        let map, markersLayer;
+
+        // --- DADOS RECURSOS HUMANOS (ATUALIZADOS) ---
+        const rhData = [
+            { id: "Distrital de São Gabriel da Cachoeira/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital Leste de Roraima/RR", mSup: 4, mMed: 1, rSup: 4, rMed: 1 },
+            { id: "Distrital Yanomami", mSup: 4, mMed: 2, rSup: 1, rMed: 2 },
+            { id: "Regional de Boa Vista/RR", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Barra do Garças/MT", mSup: 3, mMed: 1, rSup: 1, rMed: 1 },
+            { id: "Distrital de Campo Grande/MS", mSup: 4, mMed: 1, rSup: 4, rMed: 1 },
+            { id: "Distrital de Canarana/MT", mSup: 3, mMed: 1, rSup: 3, rMed: 0 },
+            { id: "Distrital de Colider/MT", mSup: 3, mMed: 1, rSup: 0, rMed: 0 },
+            { id: "Distrital de São Félix do Araguaia/MT", mSup: 3, mMed: 1, rSup: 3, rMed: 0 },
+            { id: "Distrital de Cuiabá/MT", mSup: 3, mMed: 1, rSup: 1, rMed: 0 },
+            { id: "Regional do Centro-Oeste/MT", mSup: 3, mMed: 1, rSup: 1, rMed: 0 },
+            { id: "Distrital de Florianópolis/SC", mSup: 3, mMed: 1, rSup: 2, rMed: 0 },
+            { id: "Distrital de Curitiba/PR", mSup: 4, mMed: 1, rSup: 0, rMed: 0 },
+            { id: "Regional de Curitiba/PR", mSup: 3, mMed: 1, rSup: 1, rMed: 1 },
+            { id: "Distrital de Governador Valadares/MG", mSup: 3, mMed: 1, rSup: 3, rMed: 0 },
+            { id: "Distrital de Atalaia do Norte/AM", mSup: 3, mMed: 1, rSup: 1, rMed: 1 },
+            { id: "Distrital de Cacoal/RO", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Cruzeiro do Sul/AC", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Lábrea/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Parintins/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Porto Velho/RO", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Rio Branco/AC", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Tabatinga/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Tefé/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Manaus/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Regional de Manaus/AM", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de São Luiz/MA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Salvador/BA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Regional de Salvador/BA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Regional de São Paulo/SP", mSup: 3, mMed: 1, rSup: 3, rMed: 0 },
+            { id: "Distrital de Altamira/PA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Macapá/AP", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Itaituba/PA", mSup: 3, mMed: 1, rSup: 3, rMed: 0 },
+            { id: "Distrital de Palmas/TO", mSup: 2, mMed: 1, rSup: 2, rMed: 1 },
+            { id: "Distrital de Redenção/PA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Belém/PA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Regional do Pará/PA", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Fortaleza/CE", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de João Pessoa/PB", mSup: 3, mMed: 1, rSup: 3, rMed: 0 },
+            { id: "Distrital de Maceió/AL", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Distrital de Recife/PE", mSup: 3, mMed: 1, rSup: 3, rMed: 1 },
+            { id: "Regional do Recife/PE", mSup: 3, mMed: 1, rSup: 3, rMed: 1 }
+        ];
+
+        // --- DADOS INFRAESTRUTURA ---
+        const unitsData = [
+            { id: "Distrital de Altamira/PA", city: "Altamira", coords: [-3.203, -52.206], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
+            { id: "Distrital de Atalaia do Norte/AM", city: "Atalaia do Norte", coords: [-4.371, -70.191], nat: "Locado - CPF", mob: "Regularizado", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
+            { id: "Distrital de Barra do Garças/MT", city: "Barra do Garças", coords: [-15.893, -52.256], nat: "Locado - CPF", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
+            { id: "Distrital de Belém/PA", city: "Belém", coords: [-1.455, -48.490], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "Funcionando", int: "Funcionando", tel: "Funcionamento", vig: "Contratação", imp: "Ausente", sit: "Inadequada" },
+            { id: "Distrital de Cacoal/RO", city: "Cacoal", coords: [-11.438, -61.442], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
+            { id: "Distrital de Campo Grande/MS", city: "Campo Grande", coords: [-20.469, -54.620], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "Funcionando", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Adequada" },
+            { id: "Distrital de Colíder/MT", city: "Colíder", coords: [-10.814, -55.454], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "Contratação", int: "Contratação", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Inadequada" },
+            { id: "Distrital de Canarana/MT", city: "Canarana", coords: [-13.551, -52.270], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
+            { id: "Distrital de Cruzeiro do Sul/AC", city: "Cruzeiro do Sul", coords: [-7.619, -72.673], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Não ocupado" },
+            { id: "Distrital de Florianópolis/SC", city: "Florianópolis", coords: [-27.595, -48.548], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Adequada" },
+            { id: "Distrital de Fortaleza/CE", city: "Fortaleza", coords: [-3.731, -38.526], nat: "Edif. Público", mob: "Planejamento", lim: "Contratação", jar: "Contratação", int: "Contratação", tel: "Funcionamento", vig: "Contratação", imp: "Contratação", sit: "Inadequada" },
+            { id: "Distrital de Governador Valadares/MG", city: "Governador Valadares", coords: [-18.851, -41.949], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
+            { id: "Distrital de Itaituba/PA", city: "Itaituba", coords: [-4.276, -55.983], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Não ocupado" },
+            { id: "Distrital de João Pessoa/PB", city: "João Pessoa", coords: [-7.119, -34.845], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Adequada" },
+            { id: "Distrital de Lábrea/AM", city: "Lábrea", coords: [-7.258, -64.797], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Inadequada" },
+            { id: "Distrital de Maceió/AL", city: "Maceió", coords: [-9.665, -35.735], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Adequada" },
+            { id: "Distrital de Macapá/AP", city: "Macapá", coords: [0.034, -51.066], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
+            { id: "Distrital de Palmas/TO", city: "Palmas", coords: [-10.184, -48.333], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
+            { id: "Distrital de Parintins/AM", city: "Parintins", coords: [-2.628, -56.735], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
+            { id: "Distrital de Porto Velho/RO", city: "Porto Velho", coords: [-8.761, -63.903], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
+            { id: "Distrital de Rio Branco/AC", city: "Rio Branco", coords: [-9.974, -67.807], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Não ocupado" },
+            { id: "Distrital de Redenção/PA", city: "Redenção", coords: [-8.026, -50.032], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
+            { id: "Distrital de Sâo Félix do Araguaia/MT", city: "São Félix do Araguaia", coords: [-11.616, -50.669], nat: "Coworking", mob: "NÃO SE APLICA", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Ausente", imp: "Funcionando", sit: "Adequada" },
+            { id: "Distrital de São Gabriel da Cachoeira/AM", city: "São Gabriel da Cachoeira", coords: [-0.130, -67.089], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Funcionando", sit: "Inadequada" },
+            { id: "Distrital de Tabatinga/AM", city: "Tabatinga", coords: [-4.232, -69.938], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Inadequada" },
+            { id: "Distrital de Tefé/AM", city: "Tefé", coords: [-3.354, -64.711], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Contratação", jar: "Contratação", int: "Funcionando", tel: "Funcionamento", vig: "Contratação", imp: "Contratação", sit: "Inadequada" },
+            { id: "Reg. Amazonas e Manaus", city: "Manaus", coords: [-3.119, -60.021], nat: "Edif. Público", mob: "NÃO SE APLICA", lim: "N/A", jar: "N/A", int: "N/A", tel: "N/A", vig: "N/A", imp: "N/A", sit: "Contratação" },
+            { id: "Reg. Bahia e Salvador", city: "Salvador", coords: [-12.971, -38.501], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "Funcionando", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
+            { id: "Reg. Centro-Oeste e Cuiabá", city: "Cuiabá", coords: [-15.601, -56.097], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Adequada" },
+            { id: "Reg. Pernambuco e Recife", city: "Recife", coords: [-8.057, -34.882], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Inadequada" },
+            { id: "Reg. Paraná e Curitiba", city: "Curitiba", coords: [-25.429, -49.267], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Adequada" },
+            { id: "Reg. Roraima / Yanomami", city: "Boa Vista", coords: [2.823, -60.675], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Contratação", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Inadequada" },
+            { id: "Regional de São Paulo", city: "São Paulo", coords: [-23.550, -46.633], nat: "Edif. Público", mob: "NÃO SE APLICA", lim: "N/A", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "N/A", imp: "N/A", sit: "Não ocupado" },
+            { id: "Distrital de São Luís/MA", city: "São Luís", coords: [-2.530, -44.306], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" }
+        ];
+
+        // --- LÓGICA DE NAVEGAÇÃO ---
+        function switchTab(tab) {
+            const infraContent = document.getElementById('tab-infra-content');
+            const rhContent = document.getElementById('tab-rh-content');
+            const btnInfra = document.getElementById('btn-infra');
+            const btnRh = document.getElementById('btn-rh');
+
+            if (tab === 'infra') {
+                infraContent.classList.remove('hidden');
+                rhContent.classList.add('hidden');
+                btnInfra.classList.add('active');
+                btnRh.classList.remove('active');
+            } else {
+                infraContent.classList.add('hidden');
+                rhContent.classList.remove('hidden');
+                btnRh.classList.add('active');
+                btnInfra.classList.remove('active');
+                renderRhTable();
+                initRhCharts();
+            }
+        }
+
+        // --- LÓGICA DE RH (Com Filtro e Ordenação) ---
+        function handleSortRh(key) {
+            if (rhSort.key === key) rhSort.dir = rhSort.dir === 'asc' ? 'desc' : 'asc';
+            else { rhSort.key = key; rhSort.dir = 'asc'; }
+            updateSortIconsRh();
+            renderRhTable();
+        }
+
+        function updateSortIconsRh() {
+            document.querySelectorAll('#rhTable .sort-icon').forEach(icon => {
+                icon.textContent = '↕';
+                icon.parentElement.classList.remove('active-sort');
+            });
+            const activeHeader = document.getElementById(`icon-rh-${rhSort.key}`);
+            if (activeHeader) {
+                activeHeader.textContent = rhSort.dir === 'asc' ? '↑' : '↓';
+                activeHeader.parentElement.classList.add('active-sort');
+            }
+        }
+
+        function renderRhTable() {
+            const tbody = document.querySelector('#rhTable tbody');
+            const searchTerm = document.getElementById('searchInputRh').value.toLowerCase();
+            tbody.innerHTML = '';
+            
+            let filteredRh = rhData.filter(item => item.id.toLowerCase().includes(searchTerm));
+
+            const sortedRh = [...filteredRh].sort((a, b) => {
+                let vA, vB;
+                if (rhSort.key === 'totalMeta') {
+                    vA = a.mSup + a.mMed; vB = b.mSup + b.mMed;
+                } else if (rhSort.key === 'totalReal') {
+                    vA = a.rSup + a.rMed; vB = b.rSup + b.rMed;
+                } else if (rhSort.key === 'isFull') {
+                    vA = (a.rSup + a.rMed) >= (a.mSup + a.mMed);
+                    vB = (b.rSup + b.rMed) >= (b.mSup + b.mMed);
+                } else {
+                    vA = a[rhSort.key]; vB = b[rhSort.key];
+                }
+                if (typeof vA === 'string') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
+                return rhSort.dir === 'asc' ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
+            });
+
+            sortedRh.forEach(item => {
+                const totalMeta = item.mSup + item.mMed;
+                const totalReal = item.rSup + item.rMed;
+                const isFull = totalReal >= totalMeta;
+
+                const row = `
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                        <td class="px-4 py-3.5 font-bold text-slate-700 sticky left-0 bg-white z-10 border-r">${item.id}</td>
+                        <td class="px-3 py-3.5 text-center text-slate-400 font-medium">${item.mSup}</td>
+                        <td class="px-3 py-3.5 text-center font-bold text-slate-800">${item.rSup}</td>
+                        <td class="px-3 py-3.5 text-center text-slate-400 font-medium">${item.mMed}</td>
+                        <td class="px-3 py-3.5 text-center font-bold text-slate-800">${item.rMed}</td>
+                        <td class="px-3 py-3.5 text-center bg-slate-50 font-bold">${totalMeta}</td>
+                        <td class="px-3 py-3.5 text-center bg-blue-50 font-bold text-blue-700">${totalReal}</td>
+                        <td class="px-4 py-3.5 text-center">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${isFull ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">
+                                ${isFull ? 'Sim' : 'Não'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            // Recalcular totais gerais
+            let tMeta = rhData.reduce((acc, curr) => acc + curr.mSup + curr.mMed, 0);
+            let tReal = rhData.reduce((acc, curr) => acc + curr.rSup + curr.rMed, 0);
+            document.getElementById('totalMeta').textContent = tMeta;
+            document.getElementById('totalReal').textContent = tReal;
+            document.getElementById('totalFillPercent').textContent = Math.round((tReal / tMeta) * 100) + '%';
+        }
+
+        function initRhCharts() {
+            if (rhChartInstance) {
+                rhChartInstance.destroy();
+            }
+            const ctx = document.getElementById('staffingSummaryChart').getContext('2d');
+            const labels = rhData.map(d => d.id.replace('Distrital de ', '').replace('Regional de ', ''));
+            const dataMeta = rhData.map(d => d.mSup + d.mMed);
+            const dataReal = rhData.map(d => d.rSup + d.rMed);
+
+            rhChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Meta de Vagas', data: dataMeta, backgroundColor: '#e2e8f0', borderRadius: 4 },
+                        { label: 'Vagas Preenchidas', data: dataReal, backgroundColor: '#3b82f6', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // --- LÓGICA DE INFRAESTRUTURA ---
+        function calculateCompliance(u) {
+            const fields = ['mob', 'lim', 'jar', 'int', 'tel', 'vig', 'imp'];
+            let successes = 0, applicable = 0;
+            fields.forEach(f => {
+                const val = (u[f] || "").toLowerCase();
+                if (val !== 'n/a' && !val.includes('não se aplica')) {
+                    applicable++;
+                    if (val === 'sim' || val === 'funcionando' || val === 'regularizado' || val === 'funcionamento') successes++;
+                }
+            });
+            return applicable > 0 ? Math.round((successes / applicable) * 100) : 0;
+        }
+
+        function handleSort(key) {
+            if (currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+            else { currentSort.key = key; currentSort.dir = 'asc'; }
+            updateSortIcons();
+            applyFilters();
+        }
+
+        function updateSortIcons() {
+            document.querySelectorAll('#infraTable .sort-icon').forEach(icon => {
+                icon.textContent = '↕';
+                icon.parentElement.classList.remove('active-sort');
+            });
+            const activeHeader = document.getElementById(`icon-${currentSort.key}`);
+            if (activeHeader) {
+                activeHeader.textContent = currentSort.dir === 'asc' ? '↑' : '↓';
+                activeHeader.parentElement.classList.add('active-sort');
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.querySelector('#infraTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const sorted = [...data].sort((a, b) => {
+                let vA = a[currentSort.key], vB = b[currentSort.key];
+                if (currentSort.key === 'compliance') { vA = calculateCompliance(a); vB = calculateCompliance(b); }
+                if (typeof vA === 'string') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
+                return currentSort.dir === 'asc' ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
+            });
+
+            sorted.forEach(item => {
+                const compliance = calculateCompliance(item);
+                const row = `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3.5 font-bold text-slate-800 sticky left-0 bg-white z-10 border-r border-b">${item.id}</td>
+                        <td class="px-3 py-3.5 border-b">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-[10px] w-6">${compliance}%</span>
+                                <div class="w-10 h-1 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500" style="width: ${compliance}%"></div></div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-3.5 text-slate-500 border-b">${item.nat}</td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.mob)}">${item.mob}</span></td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.lim)}">${item.lim}</span></td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.jar)}">${item.jar}</span></td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.int)}">${item.int}</span></td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.tel)}">${item.tel}</span></td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.vig)}">${item.vig}</span></td>
+                        <td class="px-3 py-3.5 border-b"><span class="status-badge ${getStatusClass(item.imp)}">${item.imp}</span></td>
+                        <td class="px-4 py-3.5 text-center border-b"><span class="status-badge ${getSituationClass(item.sit)} uppercase">${item.sit}</span></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function getStatusClass(text) {
+            const t = (text || "").toLowerCase();
+            if (t.includes('funciona') || t.includes('adequada') || t === 'regularizado' || t === 'sim') return 'bg-ok';
+            if (t.includes('contratação') || t.includes('inadequada') || t === 'planejamento') return 'bg-warning';
+            return 'bg-error';
+        }
+
+        function getSituationClass(text) {
+            const t = (text || "").toLowerCase();
+            if (t.includes('adequada')) return 'sit-adequada';
+            if (t.includes('inadequada')) return 'sit-inadequada';
+            if (t.includes('não ocupado')) return 'sit-nao-ocupado';
+            return 'sit-contratacao';
+        }
+
+        // Inicializar menu suspenso de municípios
+        function initMunicipioFilter() {
+            const municipioFilter = document.getElementById('municipioFilter');
+            if (!municipioFilter) return;
+            
+            // Obter lista única de municípios
+            const municipios = [...new Set(unitsData.map(item => item.city))].sort();
+            
+            // Limpar opções existentes (exceto a primeira)
+            while (municipioFilter.options.length > 1) {
+                municipioFilter.remove(1);
+            }
+            
+            // Adicionar opções de municípios
+            municipios.forEach(municipio => {
+                const option = document.createElement('option');
+                option.value = municipio;
+                option.textContent = municipio;
+                municipioFilter.appendChild(option);
+            });
+        }
+
+        function initMap() {
+            map = L.map('map').setView([-15.78, -52], 4);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            markersLayer = L.layerGroup().addTo(map);
+            renderMarkers(unitsData);
+        }
+
+        function renderMarkers(data) {
+            markersLayer.clearLayers();
+            data.forEach(u => {
+                if (!u.coords) return;
+                const color = u.sit.includes('Adequada') ? '#16a34a' : u.sit.includes('Inadequada') ? '#fb923c' : (u.sit.includes('Ocupado') ? '#dc2626' : '#3b82f6');
+                const marker = L.circleMarker(u.coords, { radius: 7, fillColor: color, color: "#fff", weight: 1.5, fillOpacity: 0.9 });
+                marker.bindTooltip(u.city, { permanent: true, direction: 'top', className: 'city-label', offset: [0, -8] });
+                markersLayer.addLayer(marker);
+            });
+        }
+
+        function initCharts() {
+            try { Chart.register(ChartDataLabels); } catch(e) {}
+            const situations = { "Adequada": 0, "Inadequada": 0, "Não ocupado": 0, "Contratação": 0 };
+            const naturezas = { "Coworking": 0, "Locado - CNPJ": 0, "Locado - CPF": 0, "Edif. Público": 0 };
+            const mobStatus = { "Regularizado": 0, "Ausente": 0, "Planejamento": 0, "N/A": 0 };
+            
+            const fields = ['mob', 'lim', 'jar', 'int', 'tel', 'vig', 'imp'];
+            const labels = ['Mob.', 'Limpeza', 'Jardim', 'Internet', 'Tel.', 'Vigil.', 'Impres.'];
+            const stats = { mob: { ok: 0, app: 0 }, lim: { ok: 0, app: 0 }, jar: { ok: 0, app: 0 }, int: { ok: 0, app: 0 }, tel: { ok: 0, app: 0 }, vig: { ok: 0, app: 0 }, imp: { ok: 0, app: 0 } };
+
+            unitsData.forEach(u => {
+                if (u.sit.includes("Adequada")) situations["Adequada"]++;
+                else if (u.sit.includes("Inadequada")) situations["Inadequada"]++;
+                else if (u.sit.includes("Não ocupado")) situations["Não ocupado"]++;
+                else situations["Contratação"]++;
+                if (naturezas[u.nat] !== undefined) naturezas[u.nat]++;
+                if (mobStatus[u.mob] !== undefined) mobStatus[u.mob]++; else mobStatus["N/A"]++;
+
+                fields.forEach(f => {
+                    const val = (u[f] || "").toLowerCase();
+                    if (val !== 'n/a' && !val.includes('não se aplica')) {
+                        stats[f].app++;
+                        if (val === 'sim' || val === 'funcionando' || val === 'regularizado' || val === 'funcionamento') stats[f].ok++;
+                    }
+                });
+            });
+
+            const servicesData = fields.map(f => stats[f].app > 0 ? Math.round((stats[f].ok / stats[f].app) * 100) : 0);
+            const cfg = { maintainAspectRatio: false, plugins: { datalabels: { color: '#fff', font: { weight: 'bold', size: 9 } }, legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } };
+            
+            new Chart(document.getElementById('situationChart'), { type: 'doughnut', data: { labels: Object.keys(situations), datasets: [{ data: Object.values(situations), backgroundColor: ['#16a34a', '#fb923c', '#dc2626', '#3b82f6'] }] }, options: cfg });
+            new Chart(document.getElementById('natureChart'), { type: 'pie', data: { labels: Object.keys(naturezas), datasets: [{ data: Object.values(naturezas), backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#64748b'] }] }, options: cfg });
+            new Chart(document.getElementById('mobDetailedChart'), { type: 'doughnut', data: { labels: Object.keys(mobStatus), datasets: [{ data: Object.values(mobStatus), backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#94a3b8'] }] }, options: cfg });
+            new Chart(document.getElementById('servicesChart'), { 
+                type: 'bar', 
+                data: { labels: labels, datasets: [{ label: '% de Sucesso', data: servicesData, backgroundColor: '#3b82f6', borderRadius: 3 }] }, 
+                options: { ...cfg, indexAxis: 'y', plugins: { ...cfg.plugins, legend: { display: false }, datalabels: { ...cfg.plugins.datalabels, anchor: 'end', align: 'start', formatter: (v) => v + '%' } } } 
+            });
+        }
+
+        function applyFilters() {
+            const municipioValue = document.getElementById('municipioFilter').value;
+            const natureValue = document.getElementById('natureFilter').value;
+            const situacaoValue = document.getElementById('situacaoFilter').value;
+            
+            const filtered = unitsData.filter(u => {
+                const municipioMatch = municipioValue === 'all' || u.city === municipioValue;
+                const natureMatch = natureValue === 'all' || u.nat === natureValue;
+                const situacaoMatch = situacaoValue === 'all' || u.sit === situacaoValue;
+                return municipioMatch && natureMatch && situacaoMatch;
+            });
+            
+            renderTable(filtered);
+            renderMarkers(filtered);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar menu de municípios
+            initMunicipioFilter();
+            
+            renderTable(unitsData);
+            initMap();
+            setTimeout(initCharts, 300);
+            
+            // Listeners Filtros Infra
+            document.getElementById('municipioFilter').addEventListener('change', applyFilters);
+            document.getElementById('natureFilter').addEventListener('change', applyFilters);
+            document.getElementById('situacaoFilter').addEventListener('change', applyFilters);
+            
+            // Listener Filtro RH
+            document.getElementById('searchInputRh').addEventListener('input', () => {
+                renderRhTable();
+            });
+        });
+    </script>
+</body>
+</html>
