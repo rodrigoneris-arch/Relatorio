@@ -9,11 +9,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Dependências do Chart.js (Aba 1 e 2) -->
+    <!-- Dependências do Chart.js (Aba Infra) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
-    <!-- Dependências do React e Recharts (Aba 3) -->
+    <!-- Dependências do React e Recharts (Aba Utilidades) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
@@ -28,7 +28,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* ESTILOS COMPARTILHADOS E ABA 1/2 */
+        /* ESTILOS COMPARTILHADOS E ABA INFRA */
         .status-badge { @apply px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border; }
         .sit-adequada { @apply bg-green-600 text-white border-green-700 shadow-sm; }
         .sit-inadequada { @apply bg-orange-400 text-white border-orange-500 shadow-sm; }
@@ -54,7 +54,7 @@
         }
         #map { height: 100%; width: 100%; border-radius: 1.5rem; z-index: 10; }
         
-        /* Label do mapa da Aba 1 (Vanilla JS) - Melhorada */
+        /* Label do mapa da Aba Infra (Vanilla JS) */
         .city-label { 
             background: rgba(255, 255, 255, 0.85) !important; 
             border: 1px solid #cbd5e1 !important; 
@@ -67,7 +67,7 @@
             padding: 2px 6px !important;
             margin-top: -5px !important;
         }
-        .city-label::before { display: none; } /* Remove seta padrão do tooltip */
+        .city-label::before { display: none; }
         
         th.sortable { cursor: pointer; transition: background 0.2s; position: relative; }
         th.sortable:hover { @apply bg-slate-800; }
@@ -103,7 +103,7 @@
         .legend-color { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
         .percent-badge { @apply w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2; transition: all 0.2s; }
 
-        /* ESTILOS ABA 3 (REACT/RECHARTS) */
+        /* ESTILOS ABA REACT/RECHARTS */
         .recharts-default-tooltip { border-radius: 12px !important; border: none !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -121,22 +121,28 @@
             <div>
                 <div class="flex items-center gap-2 mb-1">
                     <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Interno</span>
-                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight uppercase">Dashboard Corporativo v4.2</h1>
+                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight uppercase">Gestão dos Escritórios</h1>
                 </div>
-                <p class="text-slate-500">Gestão Integrada de Infraestrutura, Mobiliário, Recursos Humanos e Utilidades</p>
+                <p class="text-slate-500">Acompanhamento de Utilidades, Infraestrutura, Vagas e Pessoas</p>
             </div>
         </header>
 
-        <!-- NAVEGAÇÃO GLOBAL (ABAS) -->
+        <!-- NAVEGAÇÃO GLOBAL (ABAS) - REORDENADA -->
         <div class="flex flex-wrap gap-4 mb-8">
-            <button onclick="switchTab('infra')" id="btn-infra" class="tab-box tab-infra active">Infraestrutura & Mobiliário</button>
-            <button onclick="switchTab('rh')" id="btn-rh" class="tab-box tab-rh">Gestão de Pessoas (Vagas)</button>
-            <button onclick="switchTab('util')" id="btn-util" class="tab-box tab-util">Gestão de Locações e Utilidades</button>
+            <button onclick="switchTab('util')" id="btn-util" class="tab-box tab-util active">Gestão do Aluguel, Energia e Água</button>
+            <button onclick="switchTab('infra')" id="btn-infra" class="tab-box tab-infra">Infraestrutura & Mobiliário</button>
+            <button onclick="switchTab('rh')" id="btn-rh" class="tab-box tab-rh">Acompanhamento do Quadro de Vagas</button>
             <button onclick="switchTab('links')" id="btn-links" class="tab-box tab-links">Acesso Rápido & Links</button>
         </div>
 
-        <!-- CONTEÚDO 1: INFRAESTRUTURA -->
-        <div id="tab-infra-content" class="block">
+        <!-- CONTEÚDO 1: GESTÃO DE LOCAÇÕES E UTILIDADES (APLICATIVO REACT) - AGORA O PRIMEIRO -->
+        <div id="tab-util-content" class="block">
+            <!-- Root para montar a aplicação React do Código 1 -->
+            <div id="root-utilidades"></div>
+        </div>
+
+        <!-- CONTEÚDO 2: INFRAESTRUTURA -->
+        <div id="tab-infra-content" class="hidden">
             
             <!-- Linha 1: Gráficos de Rosca (3 Colunas) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -232,7 +238,7 @@
             </div>
         </div>
 
-        <!-- CONTEÚDO 2: RECURSOS HUMANOS -->
+        <!-- CONTEÚDO 3: RECURSOS HUMANOS -->
         <div id="tab-rh-content" class="hidden">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -288,12 +294,6 @@
                     </table>
                 </div>
             </div>
-        </div>
-
-        <!-- CONTEÚDO 3: GESTÃO DE LOCAÇÕES E UTILIDADES (APLICATIVO REACT) -->
-        <div id="tab-util-content" class="hidden">
-            <!-- Root para montar a aplicação React do Código 1 -->
-            <div id="root-utilidades"></div>
         </div>
 
         <!-- CONTEÚDO 4: LINKS E ACESSO RÁPIDO -->
@@ -354,20 +354,20 @@
 
     </div>
 
-    <!-- SCRIPT VANILLA JS (LOGICA DAS ABAS 1 E 2 E CONTROLE GLOBAL) -->
+    <!-- SCRIPT VANILLA JS (LOGICA DAS ABAS E CONTROLE GLOBAL) -->
     <script>
         // --- CONTROLE DE ABAS ---
         function switchTab(tab) {
             const tabsContent = {
+                'util': document.getElementById('tab-util-content'),
                 'infra': document.getElementById('tab-infra-content'),
                 'rh': document.getElementById('tab-rh-content'),
-                'util': document.getElementById('tab-util-content'),
                 'links': document.getElementById('tab-links-content')
             };
             const btns = {
+                'util': document.getElementById('btn-util'),
                 'infra': document.getElementById('btn-infra'),
                 'rh': document.getElementById('btn-rh'),
-                'util': document.getElementById('btn-util'),
                 'links': document.getElementById('btn-links')
             };
 
@@ -830,11 +830,15 @@
             initMap();
             setTimeout(initCharts, 300);
             
+            // Listeners Infra
             document.getElementById('municipioFilter').addEventListener('change', applyFilters);
             document.getElementById('natureFilter').addEventListener('change', applyFilters);
             document.getElementById('situacaoFilter').addEventListener('change', applyFilters);
             document.getElementById('searchInputRh').addEventListener('input', renderRhTable);
             
+            // Garante que a aba de Utilidades (React) renderize corretamente o mapa na carga inicial
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+
             // Renderiza ícones Lucide
             if(window.lucide) window.lucide.createIcons();
         });
