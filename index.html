@@ -68,6 +68,9 @@
         .tab-rh.active { background-color: #f0fdf4; border-color: #10b981; color: #047857; }
         .tab-util { border-left-color: #f59e0b; }
         .tab-util.active { background-color: #fffbeb; border-color: #f59e0b; color: #b45309; }
+        /* Nova aba de Links */
+        .tab-links { border-left-color: #8b5cf6; }
+        .tab-links.active { background-color: #f5f3ff; border-color: #8b5cf6; color: #7c3aed; }
 
         .map-legend {
             position: absolute; bottom: 20px; right: 20px; z-index: 1000;
@@ -102,10 +105,7 @@
                 </div>
                 <p class="text-slate-500">Gestão Integrada de Infraestrutura, Mobiliário, Recursos Humanos e Utilidades</p>
             </div>
-            <div class="flex flex-col items-end">
-                <span class="text-xs font-bold text-slate-400 uppercase">Sincronização</span>
-                <span class="bg-white border border-slate-200 px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm">10 FEV 2026</span>
-            </div>
+            <!-- Caixa de Sincronização REMOVIDA conforme solicitado -->
         </header>
 
         <!-- NAVEGAÇÃO GLOBAL (ABAS) -->
@@ -113,6 +113,7 @@
             <button onclick="switchTab('infra')" id="btn-infra" class="tab-box tab-infra active">Infraestrutura & Mobiliário</button>
             <button onclick="switchTab('rh')" id="btn-rh" class="tab-box tab-rh">Gestão de Pessoas (Vagas)</button>
             <button onclick="switchTab('util')" id="btn-util" class="tab-box tab-util">Gestão de Locações e Utilidades</button>
+            <button onclick="switchTab('links')" id="btn-links" class="tab-box tab-links">Acesso Rápido & Links</button>
         </div>
 
         <!-- CONTEÚDO 1: INFRAESTRUTURA -->
@@ -266,6 +267,68 @@
             <div id="root-utilidades"></div>
         </div>
 
+        <!-- CONTEÚDO 4: LINKS E ACESSO RÁPIDO -->
+        <div id="tab-links-content" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Trello -->
+                <a href="https://trello.com/b/xt42M1Ns/quadro-gestao-coes" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer flex items-center gap-5">
+                    <div class="bg-blue-50 p-4 rounded-xl group-hover:bg-blue-100 transition-colors">
+                        <i data-lucide="trello" class="w-8 h-8 text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-blue-700 mb-1">Trello</h3>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Quadro Gestão COES</p>
+                    </div>
+                </a>
+
+                <!-- Orçamento -->
+                <a href="https://drive.google.com/drive/u/1/folders/1OoMySo0CRk_XfTPLfDCS3iXlj0HTIgDQ" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-green-300 transition-all cursor-pointer flex items-center gap-5">
+                    <div class="bg-green-50 p-4 rounded-xl group-hover:bg-green-100 transition-colors">
+                        <i data-lucide="dollar-sign" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-green-700 mb-1">Orçamento</h3>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Drive de Finanças</p>
+                    </div>
+                </a>
+
+                <!-- Apresentações -->
+                <a href="https://drive.google.com/drive/u/1/folders/1MMeyrSvAV448UHNdCdVB48uOAhrXFJ4u" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-orange-300 transition-all cursor-pointer flex items-center gap-5">
+                    <div class="bg-orange-50 p-4 rounded-xl group-hover:bg-orange-100 transition-colors">
+                        <i data-lucide="presentation" class="w-8 h-8 text-orange-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-orange-700 mb-1">Apresentações</h3>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Material Institucional</p>
+                    </div>
+                </a>
+
+                <!-- Relatório Situacional -->
+                <a href="https://lookerstudio.google.com/u/1/reporting/a3763307-dc94-4d56-b8df-a3b93e89d150/page/page_12345/edit" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-purple-300 transition-all cursor-pointer flex items-center gap-5">
+                    <div class="bg-purple-50 p-4 rounded-xl group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="bar-chart-2" class="w-8 h-8 text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-purple-700 mb-1">Relatório Situacional</h3>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Looker Studio</p>
+                    </div>
+                </a>
+
+                <!-- Planilhas COES -->
+                <a href="https://docs.google.com/spreadsheets/d/1uu3oONRu_VGN-5don4E1aN7WuG-Qu0mZ2YBQeq0tTSo/edit?gid=0#gid=0" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-teal-300 transition-all cursor-pointer flex items-center gap-5">
+                    <div class="bg-teal-50 p-4 rounded-xl group-hover:bg-teal-100 transition-colors">
+                        <i data-lucide="table" class="w-8 h-8 text-teal-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-teal-700 mb-1">Planilhas COES</h3>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Google Sheets</p>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+
     </div>
 
     <!-- SCRIPT VANILLA JS (LOGICA DAS ABAS 1 E 2 E CONTROLE GLOBAL) -->
@@ -275,25 +338,35 @@
             const tabsContent = {
                 'infra': document.getElementById('tab-infra-content'),
                 'rh': document.getElementById('tab-rh-content'),
-                'util': document.getElementById('tab-util-content')
+                'util': document.getElementById('tab-util-content'),
+                'links': document.getElementById('tab-links-content')
             };
             const btns = {
                 'infra': document.getElementById('btn-infra'),
                 'rh': document.getElementById('btn-rh'),
-                'util': document.getElementById('btn-util')
+                'util': document.getElementById('btn-util'),
+                'links': document.getElementById('btn-links')
             };
 
             // Oculta todos e desmarca todos os botões
             Object.keys(tabsContent).forEach(key => {
-                tabsContent[key].classList.add('hidden');
-                tabsContent[key].classList.remove('block');
-                btns[key].classList.remove('active');
+                if(tabsContent[key]) {
+                    tabsContent[key].classList.add('hidden');
+                    tabsContent[key].classList.remove('block');
+                }
+                if(btns[key]) {
+                    btns[key].classList.remove('active');
+                }
             });
 
             // Mostra o ativo
-            tabsContent[tab].classList.remove('hidden');
-            tabsContent[tab].classList.add('block');
-            btns[tab].classList.add('active');
+            if(tabsContent[tab]) {
+                tabsContent[tab].classList.remove('hidden');
+                tabsContent[tab].classList.add('block');
+            }
+            if(btns[tab]) {
+                btns[tab].classList.add('active');
+            }
 
             // Gatilhos de redimensionamento e recarga
             if (tab === 'infra' && map) {
@@ -304,6 +377,9 @@
             } else if (tab === 'util') {
                 // Dispara resize na janela para que o Recharts e o Leaflet do React reajustem as dimensões
                 setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+            } else if (tab === 'links') {
+                // Reinicia ícones Lucide caso necessário
+                if(window.lucide) window.lucide.createIcons();
             }
         }
 
@@ -701,6 +777,9 @@
             document.getElementById('natureFilter').addEventListener('change', applyFilters);
             document.getElementById('situacaoFilter').addEventListener('change', applyFilters);
             document.getElementById('searchInputRh').addEventListener('input', renderRhTable);
+            
+            // Renderiza ícones Lucide
+            if(window.lucide) window.lucide.createIcons();
         });
     </script>
 
