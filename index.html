@@ -45,7 +45,8 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
         #map { height: 450px; width: 100%; border-radius: 0.75rem; z-index: 10; }
-        .city-label { background: transparent !important; border: none !important; box-shadow: none !important; font-weight: 700 !important; font-size: 11px !important; color: #1e293b !important; text-shadow: 0 0 4px white, 0 0 4px white, 0 0 4px white !important; white-space: nowrap; padding: 0 !important; }
+        /* Label do mapa da Aba 1 (Vanilla JS) */
+        .city-label { background: transparent !important; border: none !important; box-shadow: none !important; font-weight: 700 !important; font-size: 11px !important; color: #1e293b !important; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white !important; white-space: nowrap; padding: 0 !important; }
         
         th.sortable { cursor: pointer; transition: background 0.2s; position: relative; }
         th.sortable:hover { @apply bg-slate-800; }
@@ -941,11 +942,17 @@
                             return 'bg-slate-200';
                         };
 
+                        // HTML Atualizado para mostrar o nome da cidade acima das bolinhas
                         const html = `
-                            <div class="flex gap-[3px] bg-white p-1.5 rounded-full shadow-md border border-slate-200">
-                                <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Locação de Imóveis'])} shadow-sm"></div>
-                                <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Energia Elétrica'])} shadow-sm"></div>
-                                <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Água e Esgoto'])} shadow-sm"></div>
+                            <div style="position: relative; display: flex; justify-content: center;">
+                                <div style="position: absolute; bottom: 24px; white-space: nowrap; font-size: 11px; font-weight: 800; color: #1e293b; text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; pointer-events: none;">
+                                    ${city.name}
+                                </div>
+                                <div class="flex gap-[3px] bg-white p-1.5 rounded-full shadow-md border border-slate-200 hover:scale-110 transition-transform">
+                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Locação de Imóveis'])} shadow-sm"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Energia Elétrica'])} shadow-sm"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Água e Esgoto'])} shadow-sm"></div>
+                                </div>
                             </div>
                         `;
 
