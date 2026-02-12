@@ -44,9 +44,30 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        #map { height: 450px; width: 100%; border-radius: 0.75rem; z-index: 10; }
-        /* Label do mapa da Aba 1 (Vanilla JS) */
-        .city-label { background: transparent !important; border: none !important; box-shadow: none !important; font-weight: 700 !important; font-size: 11px !important; color: #1e293b !important; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white !important; white-space: nowrap; padding: 0 !important; }
+        /* Ajuste do Mapa Vanilla para ser Quadrado e Centralizado */
+        .map-container-square {
+            width: 100%;
+            max-width: 800px; /* Limita largura para não ficar gigante */
+            aspect-ratio: 1 / 1; /* Garante ser quadrado */
+            margin: 0 auto;
+            position: relative;
+        }
+        #map { height: 100%; width: 100%; border-radius: 1.5rem; z-index: 10; }
+        
+        /* Label do mapa da Aba 1 (Vanilla JS) - Melhorada */
+        .city-label { 
+            background: rgba(255, 255, 255, 0.85) !important; 
+            border: 1px solid #cbd5e1 !important; 
+            border-radius: 4px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important; 
+            font-weight: 700 !important; 
+            font-size: 10px !important; 
+            color: #0f172a !important; 
+            white-space: nowrap; 
+            padding: 2px 6px !important;
+            margin-top: -5px !important;
+        }
+        .city-label::before { display: none; } /* Remove seta padrão do tooltip */
         
         th.sortable { cursor: pointer; transition: background 0.2s; position: relative; }
         th.sortable:hover { @apply bg-slate-800; }
@@ -68,7 +89,6 @@
         .tab-rh.active { background-color: #f0fdf4; border-color: #10b981; color: #047857; }
         .tab-util { border-left-color: #f59e0b; }
         .tab-util.active { background-color: #fffbeb; border-color: #f59e0b; color: #b45309; }
-        /* Nova aba de Links */
         .tab-links { border-left-color: #8b5cf6; }
         .tab-links.active { background-color: #f5f3ff; border-color: #8b5cf6; color: #7c3aed; }
 
@@ -88,7 +108,7 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .tab-active-react { background-color: #005fb2 !important; color: white !important; }
-        .leaflet-container { z-index: 0; border-radius: 1rem; font-family: 'Inter', sans-serif; }
+        .leaflet-container { z-index: 0; border-radius: 1.5rem; font-family: 'Inter', sans-serif; }
         .custom-map-marker { background: transparent; border: none; }
         .custom-leaflet-tooltip { border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); padding: 0.5rem; }
     </style>
@@ -101,11 +121,10 @@
             <div>
                 <div class="flex items-center gap-2 mb-1">
                     <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Interno</span>
-                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight uppercase">Dashboard Corporativo v4.0</h1>
+                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight uppercase">Dashboard Corporativo v4.2</h1>
                 </div>
                 <p class="text-slate-500">Gestão Integrada de Infraestrutura, Mobiliário, Recursos Humanos e Utilidades</p>
             </div>
-            <!-- Caixa de Sincronização REMOVIDA conforme solicitado -->
         </header>
 
         <!-- NAVEGAÇÃO GLOBAL (ABAS) -->
@@ -118,33 +137,43 @@
 
         <!-- CONTEÚDO 1: INFRAESTRUTURA -->
         <div id="tab-infra-content" class="block">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Situação Geral</h3>
-                    <div class="h-[180px] flex justify-center items-center"><canvas id="situationChart"></canvas></div>
+            
+            <!-- Linha 1: Gráficos de Rosca (3 Colunas) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Situação Geral</h3>
+                    <div class="h-[200px] flex justify-center items-center"><canvas id="situationChart"></canvas></div>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Natureza Jurídica</h3>
-                    <div class="h-[180px] flex justify-center items-center"><canvas id="natureChart"></canvas></div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Natureza Jurídica</h3>
+                    <div class="h-[200px] flex justify-center items-center"><canvas id="natureChart"></canvas></div>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Mobiliário</h3>
-                    <div class="h-[180px] flex justify-center items-center"><canvas id="mobDetailedChart"></canvas></div>
-                </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider">Atingimento por Serviço (%)</h3>
-                    <div class="h-[180px]"><canvas id="servicesChart"></canvas></div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Mobiliário</h3>
+                    <div class="h-[200px] flex justify-center items-center"><canvas id="mobDetailedChart"></canvas></div>
                 </div>
             </div>
 
-            <!-- Mapa Infra -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 relative">
-                <div id="map" class="border border-slate-100"></div>
-                <div class="map-legend">
-                    <div class="legend-item"><span class="legend-color bg-green-600"></span> Adequada</div>
-                    <div class="legend-item"><span class="legend-color bg-orange-400"></span> Inadequada</div>
-                    <div class="legend-item"><span class="legend-color bg-red-600"></span> Não Ocupado</div>
-                    <div class="legend-item"><span class="legend-color bg-blue-500"></span> Contratação</div>
+            <!-- Linha 2: Gráfico de Atingimento (Em Evidência - Full Width) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                <h3 class="text-[11px] font-black text-slate-600 uppercase mb-6 tracking-wider flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i>
+                    Atingimento por Serviço (%)
+                </h3>
+                <div class="h-[250px]"><canvas id="servicesChart"></canvas></div>
+            </div>
+
+            <!-- Mapa Infra (Quadrado e Centralizado) -->
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 mb-8 relative">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Geolocalização das Unidades</h3>
+                <div class="map-container-square">
+                    <div id="map" class="border border-slate-100 shadow-inner"></div>
+                    <div class="map-legend">
+                        <div class="legend-item"><span class="legend-color bg-green-600"></span> Adequada</div>
+                        <div class="legend-item"><span class="legend-color bg-orange-400"></span> Inadequada</div>
+                        <div class="legend-item"><span class="legend-color bg-red-600"></span> Não Ocupado</div>
+                        <div class="legend-item"><span class="legend-color bg-blue-500"></span> Contratação</div>
+                    </div>
                 </div>
             </div>
 
@@ -270,7 +299,6 @@
         <!-- CONTEÚDO 4: LINKS E ACESSO RÁPIDO -->
         <div id="tab-links-content" class="hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
                 <!-- Trello -->
                 <a href="https://trello.com/b/xt42M1Ns/quadro-gestao-coes" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer flex items-center gap-5">
                     <div class="bg-blue-50 p-4 rounded-xl group-hover:bg-blue-100 transition-colors">
@@ -281,7 +309,6 @@
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Quadro Gestão COES</p>
                     </div>
                 </a>
-
                 <!-- Orçamento -->
                 <a href="https://drive.google.com/drive/u/1/folders/1OoMySo0CRk_XfTPLfDCS3iXlj0HTIgDQ" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-green-300 transition-all cursor-pointer flex items-center gap-5">
                     <div class="bg-green-50 p-4 rounded-xl group-hover:bg-green-100 transition-colors">
@@ -292,7 +319,6 @@
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Drive de Finanças</p>
                     </div>
                 </a>
-
                 <!-- Apresentações -->
                 <a href="https://drive.google.com/drive/u/1/folders/1MMeyrSvAV448UHNdCdVB48uOAhrXFJ4u" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-orange-300 transition-all cursor-pointer flex items-center gap-5">
                     <div class="bg-orange-50 p-4 rounded-xl group-hover:bg-orange-100 transition-colors">
@@ -303,7 +329,6 @@
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Material Institucional</p>
                     </div>
                 </a>
-
                 <!-- Relatório Situacional -->
                 <a href="https://lookerstudio.google.com/u/1/reporting/a3763307-dc94-4d56-b8df-a3b93e89d150/page/page_12345/edit" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-purple-300 transition-all cursor-pointer flex items-center gap-5">
                     <div class="bg-purple-50 p-4 rounded-xl group-hover:bg-purple-100 transition-colors">
@@ -314,7 +339,6 @@
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Looker Studio</p>
                     </div>
                 </a>
-
                 <!-- Planilhas COES -->
                 <a href="https://docs.google.com/spreadsheets/d/1uu3oONRu_VGN-5don4E1aN7WuG-Qu0mZ2YBQeq0tTSo/edit?gid=0#gid=0" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-teal-300 transition-all cursor-pointer flex items-center gap-5">
                     <div class="bg-teal-50 p-4 rounded-xl group-hover:bg-teal-100 transition-colors">
@@ -325,7 +349,6 @@
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Google Sheets</p>
                     </div>
                 </a>
-
             </div>
         </div>
 
@@ -375,10 +398,8 @@
                 renderRhTable();
                 initRhCharts();
             } else if (tab === 'util') {
-                // Dispara resize na janela para que o Recharts e o Leaflet do React reajustem as dimensões
                 setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
             } else if (tab === 'links') {
-                // Reinicia ícones Lucide caso necessário
                 if(window.lucide) window.lucide.createIcons();
             }
         }
@@ -694,7 +715,13 @@
         }
 
         function initMap() {
-            map = L.map('map').setView([-15.78, -52], 4);
+            // AJUSTE: Limitando Zoom e Área do Mapa
+            map = L.map('map', { 
+                minZoom: 4, 
+                maxBounds: [[-35, -75], [5, -30]], // Restringe a área de navegação (aprox. Brasil)
+                maxBoundsViscosity: 1.0 
+            }).setView([-15.78, -52], 4);
+            
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             markersLayer = L.layerGroup().addTo(map);
             renderMarkers(unitsData);
@@ -706,7 +733,16 @@
                 if (!u.coords) return;
                 const color = u.sit.includes('Adequada') ? '#16a34a' : u.sit.includes('Inadequada') ? '#fb923c' : (u.sit.includes('Ocupado') ? '#dc2626' : '#3b82f6');
                 const marker = L.circleMarker(u.coords, { radius: 7, fillColor: color, color: "#fff", weight: 1.5, fillOpacity: 0.9 });
-                marker.bindTooltip(u.city, { permanent: true, direction: 'top', className: 'city-label', offset: [0, -8] });
+                
+                // Melhoria no Tooltip do Vanilla JS para corresponder ao pedido
+                marker.bindTooltip(u.city, { 
+                    permanent: true, 
+                    direction: 'top', 
+                    className: 'city-label', 
+                    offset: [0, -8],
+                    opacity: 0.9
+                });
+                
                 markersLayer.addLayer(marker);
             });
         }
@@ -744,10 +780,31 @@
             new Chart(document.getElementById('situationChart'), { type: 'doughnut', data: { labels: Object.keys(situations), datasets: [{ data: Object.values(situations), backgroundColor: ['#16a34a', '#fb923c', '#dc2626', '#3b82f6'] }] }, options: cfg });
             new Chart(document.getElementById('natureChart'), { type: 'pie', data: { labels: Object.keys(naturezas), datasets: [{ data: Object.values(naturezas), backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#64748b'] }] }, options: cfg });
             new Chart(document.getElementById('mobDetailedChart'), { type: 'doughnut', data: { labels: Object.keys(mobStatus), datasets: [{ data: Object.values(mobStatus), backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#94a3b8'] }] }, options: cfg });
+            
+            // Gráfico de Barras em Evidência (Ajuste para Horizontal e Rótulos Visíveis)
             new Chart(document.getElementById('servicesChart'), { 
                 type: 'bar', 
-                data: { labels: labels, datasets: [{ label: '% de Sucesso', data: servicesData, backgroundColor: '#3b82f6', borderRadius: 3 }] }, 
-                options: { ...cfg, indexAxis: 'y', plugins: { ...cfg.plugins, legend: { display: false }, datalabels: { ...cfg.plugins.datalabels, anchor: 'end', align: 'start', formatter: (v) => v + '%' } } } 
+                data: { labels: labels, datasets: [{ label: '% de Sucesso', data: servicesData, backgroundColor: '#3b82f6', borderRadius: 6 }] }, 
+                options: { 
+                    maintainAspectRatio: false,
+                    indexAxis: 'x', // Voltar para vertical para ocupar melhor a largura total
+                    scales: {
+                        y: { beginAtZero: true, max: 115, grid: { borderDash: [2, 4] } }, // Max 115 para dar espaço ao rótulo
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { 
+                        legend: { display: false }, 
+                        // AJUSTE: Rótulos escuros no topo da barra
+                        datalabels: { 
+                            color: '#334155', 
+                            anchor: 'end', 
+                            align: 'top', 
+                            offset: -4,
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (v) => v + '%' 
+                        } 
+                    } 
+                } 
             });
         }
 
@@ -1000,7 +1057,13 @@
                 if (!window.L) return;
 
                 if (!mapInstance.current && mapRef.current) {
-                    mapInstance.current = window.L.map(mapRef.current).setView([-12.0, -55.0], 4);
+                    // AJUSTE: Limitando Zoom e Área do Mapa (React)
+                    mapInstance.current = window.L.map(mapRef.current, {
+                        minZoom: 4,
+                        maxBounds: [[-35, -75], [5, -30]],
+                        maxBoundsViscosity: 1.0
+                    }).setView([-12.0, -55.0], 4);
+                    
                     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                         attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 19
                     }).addTo(mapInstance.current);
@@ -1021,16 +1084,19 @@
                             return 'bg-slate-200';
                         };
 
-                        // HTML Atualizado para mostrar o nome da cidade acima das bolinhas
+                        // Lógica Z-Index Invertida (Latitude menor = maior Z) para que sul não cubra norte
+                        const zIndexVal = Math.floor((90 - city.lat) * 100);
+
+                        // Visualização aprimorada: Texto com fundo + Sombra + Z-index inteligente
                         const html = `
-                            <div style="position: relative; display: flex; justify-content: center;">
-                                <div style="position: absolute; bottom: 24px; white-space: nowrap; font-size: 11px; font-weight: 800; color: #1e293b; text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; pointer-events: none;">
+                            <div style="position: relative; display: flex; justify-content: center; z-index: ${zIndexVal}; pointer-events: none;">
+                                <div style="position: absolute; bottom: 22px; white-space: nowrap; font-size: 10px; font-weight: 700; color: #334155; background: rgba(255, 255, 255, 0.85); padding: 1px 6px; border-radius: 6px; border: 1px solid rgba(203, 213, 225, 0.6); box-shadow: 0 2px 4px rgba(0,0,0,0.05); backdrop-filter: blur(2px);">
                                     ${city.name}
                                 </div>
-                                <div class="flex gap-[3px] bg-white p-1.5 rounded-full shadow-md border border-slate-200 hover:scale-110 transition-transform">
-                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Locação de Imóveis'])} shadow-sm"></div>
-                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Energia Elétrica'])} shadow-sm"></div>
-                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Água e Esgoto'])} shadow-sm"></div>
+                                <div style="pointer-events: auto; z-index: ${zIndexVal + 10};" class="flex gap-[2px] bg-white p-1 rounded-full shadow-md border border-slate-200 hover:scale-110 transition-transform cursor-pointer">
+                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Locação de Imóveis'])}"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Energia Elétrica'])}"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full ${getColor(city.status['Água e Esgoto'])}"></div>
                                 </div>
                             </div>
                         `;
@@ -1046,7 +1112,7 @@
 
                         const icon = window.L.divIcon({ html: html, className: 'custom-map-marker', iconSize: [44, 20], iconAnchor: [22, 10] });
 
-                        window.L.marker([city.lat, city.lng], { icon })
+                        window.L.marker([city.lat, city.lng], { icon, zIndexOffset: zIndexVal })
                             .bindTooltip(tooltipHtml, { direction: 'top', className: 'custom-leaflet-tooltip', offset: [0, -10] })
                             .addTo(mapInstance.current);
                     });
@@ -1061,17 +1127,21 @@
             }, []);
 
             return (
-                <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col mb-8 w-full relative">
-                    <h3 className="text-[10px] font-black text-slate-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
-                        <LucideIcon name="map" className="text-blue-500 w-4 h-4" /> Distribuição Geográfica de Contas (Status Integrado)
+                <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col mb-8 w-full relative">
+                    <h3 className="text-[10px] font-black text-slate-400 mb-4 flex items-center gap-2 uppercase tracking-widest justify-center">
+                        <LucideIcon name="map" className="text-blue-500 w-4 h-4" /> Distribuição Geográfica (Quadrado)
                     </h3>
-                    <div ref={mapRef} className="w-full h-[400px] rounded-2xl z-0 border border-slate-200 shadow-inner overflow-hidden relative"></div>
                     
-                    <div className="absolute top-16 right-10 bg-white/90 backdrop-blur-sm p-3 rounded-xl border border-slate-200 shadow-sm z-[10] text-[9px] font-bold uppercase text-slate-500 flex flex-col gap-1.5">
-                        <p className="border-b border-slate-200 pb-1 mb-1 text-[8px]">Ordem das Bolinhas</p>
-                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 1º Locação</div>
-                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 2º Energia</div>
-                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 3º Água</div>
+                    {/* Container Quadrado Controlado */}
+                    <div className="w-full max-w-[800px] aspect-square mx-auto relative border border-slate-100 rounded-3xl shadow-inner overflow-hidden bg-slate-50">
+                        <div ref={mapRef} className="w-full h-full z-0"></div>
+                        
+                        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-sm z-[1000] text-[9px] font-bold uppercase text-slate-500 flex flex-col gap-1.5">
+                            <p className="border-b border-slate-200 pb-1 mb-1 text-[8px]">Legenda</p>
+                            <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 1º Locação</div>
+                            <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 2º Energia</div>
+                            <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 3º Água</div>
+                        </div>
                     </div>
                 </div>
             );
