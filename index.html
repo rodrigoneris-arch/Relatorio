@@ -1,17 +1,13 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+\<!DOCTYPE html>
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Executivo de Infraestrutura, RH, Utilidades e Orçamento</title>
+    <title>Painel Executivo de RH, Utilidades e Orçamento</title>
     
     <!-- Dependências do Tailwind e Ícones -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Dependências do Chart.js (Aba Infra) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
     <!-- Dependências do React e Recharts (Aba Utilidades) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -28,7 +24,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* ESTILOS COMPARTILHADOS E ABA INFRA */
+        /* ESTILOS COMPARTILHADOS */
         .status-badge { @apply px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border; }
         .sit-adequada { @apply bg-green-600 text-white border-green-700 shadow-sm; }
         .sit-inadequada { @apply bg-orange-400 text-white border-orange-500 shadow-sm; }
@@ -46,7 +42,7 @@
         
         /* Ajuste do Mapa Vanilla para ser Quadrado e Centralizado */
         .map-container-square { width: 100%; max-width: 800px; aspect-ratio: 1 / 1; margin: 0 auto; position: relative; }
-        #map, #map-comp, #map-orc { height: 100%; width: 100%; border-radius: 1.5rem; z-index: 10; }
+        #map-comp, #map-orc { height: 100%; width: 100%; border-radius: 1.5rem; z-index: 10; }
         
         .city-label { 
             background: rgba(255, 255, 255, 0.85) !important; border: 1px solid #cbd5e1 !important; 
@@ -67,8 +63,6 @@
             color: #64748b; 
         }
         .tab-box.active { @apply border-slate-900 bg-slate-50 shadow-md; color: #1e293b; }
-        .tab-infra { border-left-color: #3b82f6; }
-        .tab-infra.active { background-color: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
         .tab-rh { border-left-color: #10b981; }
         .tab-rh.active { background-color: #f0fdf4; border-color: #10b981; color: #047857; }
         .tab-util { border-left-color: #f59e0b; }
@@ -79,17 +73,6 @@
         .tab-orc.active { background-color: #f5f3ff; border-color: #8b5cf6; color: #7c3aed; }
         .tab-links { border-left-color: #64748b; }
         .tab-links.active { background-color: #f1f5f9; border-color: #64748b; color: #334155; }
-
-        .map-legend {
-            position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-            background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 10px; border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 10px;
-            font-weight: bold; display: flex; flex-direction: column;
-            gap: 6px; border: 1px solid #e2e8f0;
-        }
-        .legend-item { display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
-        .legend-color { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
-        .percent-badge { @apply w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2; transition: all 0.2s; }
 
         /* ESTILOS ABA REACT/RECHARTS */
         .recharts-default-tooltip { border-radius: 12px !important; border: none !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important; }
@@ -129,10 +112,9 @@
             </div>
         </header>
 
-        <!-- NAVEGAÇÃO GLOBAL (ABAS) -->
+        <!-- NAVEGAÇÃO GLOBAL (ABAS) - SEM INFRAESTRUTURA -->
         <div class="flex flex-wrap gap-3 mb-8 border-b border-slate-200 pb-4">
             <button onclick="switchTab('util')" id="btn-util" class="tab-box tab-util active">Gestão de Aluguel/Utilidades</button>
-            <button onclick="switchTab('infra')" id="btn-infra" class="tab-box tab-infra">Infraestrutura</button>
             <button onclick="switchTab('rh')" id="btn-rh" class="tab-box tab-rh">Quadro de Vagas</button>
             <button onclick="switchTab('comp')" id="btn-comp" class="tab-box tab-comp">Gestão de Competências</button>
             <button onclick="switchTab('orc')" id="btn-orc" class="tab-box tab-orc">Orçamento 2026</button>
@@ -144,87 +126,7 @@
             <div id="root-utilidades"></div>
         </div>
 
-        <!-- CONTEÚDO 2: INFRAESTRUTURA -->
-        <div id="tab-infra-content" class="hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Situação Geral</h3>
-                    <div class="h-[200px] flex justify-center items-center"><canvas id="situationChart"></canvas></div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Natureza Jurídica</h3>
-                    <div class="h-[200px] flex justify-center items-center"><canvas id="natureChart"></canvas></div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Mobiliário</h3>
-                    <div class="h-[200px] flex justify-center items-center"><canvas id="mobDetailedChart"></canvas></div>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-                <h3 class="text-[11px] font-black text-slate-600 uppercase mb-6 tracking-wider flex items-center gap-2">
-                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i> Atingimento por Serviço (%)
-                </h3>
-                <div class="h-[250px]"><canvas id="servicesChart"></canvas></div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 mb-8 relative">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-wider text-center">Geolocalização das Unidades</h3>
-                <div class="map-container-square">
-                    <div id="map" class="border border-slate-100 shadow-inner"></div>
-                    <div class="map-legend">
-                        <div class="legend-item"><span class="legend-color bg-green-600"></span> Adequada</div>
-                        <div class="legend-item"><span class="legend-color bg-orange-400"></span> Inadequada</div>
-                        <div class="legend-item"><span class="legend-color bg-red-600"></span> Não Ocupado</div>
-                        <div class="legend-item"><span class="legend-color bg-blue-500"></span> Contratação</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-end">
-                <div class="flex-1 min-w-[200px]">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Município Sede</label>
-                    <select id="municipioFilter" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-500"><option value="all">Todos</option></select>
-                </div>
-                <div class="w-48">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Natureza Jurídica</label>
-                    <select id="natureFilter" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
-                        <option value="all">Todas</option><option value="Coworking">Coworking</option><option value="Locado - CNPJ">Locado - CNPJ</option><option value="Locado - CPF">Locado - CPF</option><option value="Edif. Público">Edifício Público</option>
-                    </select>
-                </div>
-                <div class="w-48">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Situação Final</label>
-                    <select id="situacaoFilter" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
-                        <option value="all">Todas</option><option value="Adequada">Adequada</option><option value="Inadequada">Inadequada</option><option value="Não ocupado">Não Ocupado</option><option value="Contratação">Contratação</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[500px]">
-                    <table class="w-full text-left text-[11px] border-separate border-spacing-0" id="infraTable">
-                        <thead class="bg-slate-900 text-white uppercase font-bold tracking-wider">
-                            <tr>
-                                <th class="px-4 py-4 sticky left-0 top-0 bg-slate-900 z-40 border-b border-slate-800 sortable" onclick="handleSort('id')">Município Sede <span class="sort-icon" id="icon-id">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('compliance')">Atingimento <span class="sort-icon" id="icon-compliance">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('nat')">Natureza <span class="sort-icon" id="icon-nat">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('mob')">Mobiliário <span class="sort-icon" id="icon-mob">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('lim')">Limpeza <span class="sort-icon" id="icon-lim">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('jar')">Jardinagem <span class="sort-icon" id="icon-jar">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('int')">Internet <span class="sort-icon" id="icon-int">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('tel')">Telefonia <span class="sort-icon" id="icon-tel">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('vig')">Vigilância <span class="sort-icon" id="icon-vig">↕</span></th>
-                                <th class="px-3 py-4 sticky top-0 bg-slate-900 z-30 border-b border-slate-800 sortable" onclick="handleSort('imp')">Impressão <span class="sort-icon" id="icon-imp">↕</span></th>
-                                <th class="px-4 py-4 text-center sticky top-0 bg-slate-900 z-30 border-b border-slate-800">Situação Final</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- CONTEÚDO 3: RECURSOS HUMANOS -->
+        <!-- CONTEÚDO 2: RECURSOS HUMANOS -->
         <div id="tab-rh-content" class="hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center text-center">
@@ -272,7 +174,7 @@
             </div>
         </div>
 
-        <!-- CONTEÚDO 4: GESTÃO DE COMPETÊNCIAS (Novo - Substituto do index 2) -->
+        <!-- CONTEÚDO 3: GESTÃO DE COMPETÊNCIAS -->
         <div id="tab-comp-content" class="hidden">
             <!-- Sub-Abas Competências -->
             <div class="flex gap-4 mb-6">
@@ -355,7 +257,7 @@
             </div>
         </div>
 
-        <!-- CONTEÚDO 5: ORÇAMENTO 2026 (Novo - Substituto do index 3) -->
+        <!-- CONTEÚDO 4: ORÇAMENTO 2026 -->
         <div id="tab-orc-content" class="hidden">
             <!-- Cards Resumo -->
             <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
@@ -426,7 +328,7 @@
             </div>
         </div>
 
-        <!-- CONTEÚDO 6: LINKS E ACESSO RÁPIDO -->
+        <!-- CONTEÚDO 5: LINKS E ACESSO RÁPIDO -->
         <div id="tab-links-content" class="hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <a href="https://trello.com/b/xt42M1Ns/quadro-gestao-coes" target="_blank" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-blue-300 transition-all flex items-center gap-5">
@@ -458,16 +360,16 @@
 
     </div>
 
-    <!-- SCRIPT VANILLA JS (CONTROLE GLOBAL E ABAS 2, 3, 4 e 5) -->
+    <!-- SCRIPT VANILLA JS (CONTROLE GLOBAL E ABAS 2, 3 E 4) -->
     <script>
         // --- ESTADOS GLOBAIS DE MAPAS ---
-        let mapInfra, mapComp, mapOrc;
+        let mapComp, mapOrc;
         let isCompLoaded = false;
         let isOrcLoaded = false;
 
         // --- CONTROLE DE ABAS PRINCIPAIS ---
         function switchTab(tab) {
-            const tabs = ['util', 'infra', 'rh', 'comp', 'orc', 'links'];
+            const tabs = ['util', 'rh', 'comp', 'orc', 'links'];
             
             tabs.forEach(t => {
                 const content = document.getElementById(`tab-${t}-content`);
@@ -481,238 +383,21 @@
             if(activeContent) { activeContent.classList.remove('hidden'); activeContent.classList.add('block'); }
             if(activeBtn) activeBtn.classList.add('active');
 
-            // Gatilhos específicos
-            if (tab === 'infra' && mapInfra) setTimeout(() => mapInfra.invalidateSize(), 100);
-            else if (tab === 'rh') renderRhTable();
-            else if (tab === 'util') setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-            else if (tab === 'comp') {
+            // Gatilhos específicos otimizados com requestAnimationFrame
+            if (tab === 'rh') {
+                renderRhTable();
+            } else if (tab === 'util') {
+                requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+            } else if (tab === 'comp') {
                 if(!isCompLoaded) { initCompApp(); isCompLoaded = true; }
-                setTimeout(() => { if(mapComp) mapComp.invalidateSize(); }, 100);
-            }
-            else if (tab === 'orc') {
+                if(mapComp) requestAnimationFrame(() => mapComp.invalidateSize());
+            } else if (tab === 'orc') {
                 if(!isOrcLoaded) { initOrcApp(); isOrcLoaded = true; }
-                setTimeout(() => { if(mapOrc) mapOrc.invalidateSize(); }, 100);
+                if(mapOrc) requestAnimationFrame(() => mapOrc.invalidateSize());
+            } else if (tab === 'links' && window.lucide) {
+                window.lucide.createIcons();
             }
-            else if (tab === 'links' && window.lucide) window.lucide.createIcons();
         }
-
-        // ==========================================
-        // DADOS E LÓGICA: INFRAESTRUTURA
-        // ==========================================
-        let currentSortInfra = { key: 'id', dir: 'asc' };
-        
-        const unitsData = [
-            { id: "Distrital de Altamira/PA", city: "Altamira", coords: [-3.203, -52.206], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
-            { id: "Distrital de Atalaia do Norte/AM", city: "Atalaia do Norte", coords: [-4.371, -70.191], nat: "Locado - CPF", mob: "Regularizado", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
-            { id: "Distrital de Barra do Garças/MT", city: "Barra do Garças", coords: [-15.893, -52.256], nat: "Locado - CPF", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
-            { id: "Distrital de Belém/PA", city: "Belém", coords: [-1.455, -48.490], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "Funcionando", int: "Funcionando", tel: "Funcionamento", vig: "Contratação", imp: "Ausente", sit: "Inadequada" },
-            { id: "Distrital de Cacoal/RO", city: "Cacoal", coords: [-11.438, -61.442], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
-            { id: "Distrital de Campo Grande/MS", city: "Campo Grande", coords: [-20.469, -54.620], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "Funcionando", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Adequada" },
-            { id: "Distrital de Colíder/MT", city: "Colíder", coords: [-10.814, -55.454], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "Contratação", int: "Contratação", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Inadequada" },
-            { id: "Distrital de Canarana/MT", city: "Canarana", coords: [-13.551, -52.270], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
-            { id: "Distrital de Cruzeiro do Sul/AC", city: "Cruzeiro do Sul", coords: [-7.619, -72.673], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Não ocupado" },
-            { id: "Distrital de Florianópolis/SC", city: "Florianópolis", coords: [-27.595, -48.548], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Adequada" },
-            { id: "Distrital de Fortaleza/CE", city: "Fortaleza", coords: [-3.731, -38.526], nat: "Edif. Público", mob: "Planejamento", lim: "Contratação", jar: "Contratação", int: "Contratação", tel: "Funcionamento", vig: "Contratação", imp: "Contratação", sit: "Inadequada" },
-            { id: "Distrital de Governador Valadares/MG", city: "Governador Valadares", coords: [-18.851, -41.949], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
-            { id: "Distrital de Itaituba/PA", city: "Itaituba", coords: [-4.276, -55.983], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Não ocupado" },
-            { id: "Distrital de João Pessoa/PB", city: "João Pessoa", coords: [-7.119, -34.845], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Adequada" },
-            { id: "Distrital de Lábrea/AM", city: "Lábrea", coords: [-7.258, -64.797], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "Ausente", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Inadequada" },
-            { id: "Distrital de Maceió/AL", city: "Maceió", coords: [-9.665, -35.735], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Adequada" },
-            { id: "Distrital de Macapá/AP", city: "Macapá", coords: [0.034, -51.066], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
-            { id: "Distrital de Palmas/TO", city: "Palmas", coords: [-10.184, -48.333], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
-            { id: "Distrital de Parintins/AM", city: "Parintins", coords: [-2.628, -56.735], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
-            { id: "Distrital de Porto Velho/RO", city: "Porto Velho", coords: [-8.761, -63.903], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Não ocupado" },
-            { id: "Distrital de Rio Branco/AC", city: "Rio Branco", coords: [-9.974, -67.807], nat: "Locado - CNPJ", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Não ocupado" },
-            { id: "Distrital de Redenção/PA", city: "Redenção", coords: [-8.026, -50.032], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Ausente", sit: "Inadequada" },
-            { id: "Distrital de Sâo Félix do Araguaia/MT", city: "São Félix do Araguaia", coords: [-11.616, -50.669], nat: "Coworking", mob: "NÃO SE APLICA", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Ausente", imp: "Funcionando", sit: "Adequada" },
-            { id: "Distrital de São Gabriel da Cachoeira/AM", city: "São Gabriel da Cachoeira", coords: [-0.130, -67.089], nat: "Locado - CPF", mob: "Ausente", lim: "Ausente", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Ausente", imp: "Funcionando", sit: "Inadequada" },
-            { id: "Distrital de Tabatinga/AM", city: "Tabatinga", coords: [-4.232, -69.938], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Ausente", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Ausente", imp: "Contratação", sit: "Inadequada" },
-            { id: "Distrital de Tefé/AM", city: "Tefé", coords: [-3.354, -64.711], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Contratação", jar: "Contratação", int: "Funcionando", tel: "Funcionamento", vig: "Contratação", imp: "Contratação", sit: "Inadequada" },
-            { id: "Reg. Amazonas e Manaus", city: "Manaus", coords: [-3.119, -60.021], nat: "Edif. Público", mob: "NÃO SE APLICA", lim: "N/A", jar: "N/A", int: "N/A", tel: "N/A", vig: "N/A", imp: "N/A", sit: "Contratação" },
-            { id: "Reg. Bahia e Salvador", city: "Salvador", coords: [-12.971, -38.501], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "Funcionando", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" },
-            { id: "Reg. Centro-Oeste e Cuiabá", city: "Cuiabá", coords: [-15.601, -56.097], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Adequada" },
-            { id: "Reg. Pernambuco e Recife", city: "Recife", coords: [-8.057, -34.882], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Inadequada" },
-            { id: "Reg. Paraná e Curitiba", city: "Curitiba", coords: [-25.429, -49.267], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Ausente", sit: "Adequada" },
-            { id: "Reg. Roraima / Yanomami", city: "Boa Vista", coords: [2.823, -60.675], nat: "Locado - CNPJ", mob: "Regularizado", lim: "Contratação", jar: "N/A", int: "Contratação", tel: "Funcionamento", vig: "Funcionando", imp: "Contratação", sit: "Inadequada" },
-            { id: "Regional de São Paulo", city: "São Paulo", coords: [-23.550, -46.633], nat: "Edif. Público", mob: "NÃO SE APLICA", lim: "N/A", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "N/A", imp: "N/A", sit: "Não ocupado" },
-            { id: "Distrital de São Luís/MA", city: "São Luís", coords: [-2.530, -44.306], nat: "Coworking", mob: "Regularizado", lim: "Funcionando", jar: "N/A", int: "Funcionando", tel: "Funcionamento", vig: "Funcionando", imp: "Funcionando", sit: "Adequada" }
-        ];
-
-        function calculateCompliance(u) {
-            const fields = ['mob', 'lim', 'jar', 'int', 'tel', 'vig', 'imp'];
-            let successes = 0, applicable = 0;
-            fields.forEach(f => {
-                const val = (u[f] || "").toLowerCase();
-                if (val !== 'n/a' && !val.includes('não se aplica')) {
-                    applicable++;
-                    if (val === 'sim' || val === 'funcionando' || val === 'regularizado' || val === 'funcionamento') successes++;
-                }
-            });
-            return applicable > 0 ? Math.round((successes / applicable) * 100) : 0;
-        }
-
-        function getComplianceColor(percent) {
-            if (percent >= 90) return '#16a34a'; if (percent >= 80) return '#22c55e'; if (percent >= 70) return '#84cc16';
-            if (percent >= 60) return '#eab308'; if (percent >= 50) return '#f97316'; if (percent >= 40) return '#ef4444';
-            if (percent >= 30) return '#dc2626'; if (percent >= 20) return '#b91c1c'; return '#991b1b';
-        }
-
-        function handleSort(key) {
-            if (currentSortInfra.key === key) currentSortInfra.dir = currentSortInfra.dir === 'asc' ? 'desc' : 'asc';
-            else { currentSortInfra.key = key; currentSortInfra.dir = 'asc'; }
-            
-            document.querySelectorAll('#infraTable .sort-icon').forEach(icon => { icon.textContent = '↕'; icon.parentElement.classList.remove('active-sort'); });
-            const activeHeader = document.getElementById(`icon-${key}`);
-            if (activeHeader) { activeHeader.textContent = currentSortInfra.dir === 'asc' ? '↑' : '↓'; activeHeader.parentElement.classList.add('active-sort'); }
-            applyFiltersInfra();
-        }
-
-        function initMunicipioFilter() {
-            const municipioFilter = document.getElementById('municipioFilter');
-            if (!municipioFilter) return;
-            const municipios = [...new Set(unitsData.map(item => item.city))].sort();
-            while (municipioFilter.options.length > 1) municipioFilter.remove(1);
-            municipios.forEach(municipio => {
-                const option = document.createElement('option');
-                option.value = municipio; option.textContent = municipio;
-                municipioFilter.appendChild(option);
-            });
-        }
-
-        function renderTableInfra(data) {
-            const tbody = document.querySelector('#infraTable tbody');
-            tbody.innerHTML = '';
-            
-            const sorted = [...data].sort((a, b) => {
-                let vA = a[currentSortInfra.key], vB = b[currentSortInfra.key];
-                if (currentSortInfra.key === 'compliance') { vA = calculateCompliance(a); vB = calculateCompliance(b); }
-                if (typeof vA === 'string') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
-                return currentSortInfra.dir === 'asc' ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
-            });
-
-            sorted.forEach(item => {
-                const comp = calculateCompliance(item);
-                const bgCol = getComplianceColor(comp);
-                const statClass = (t) => {
-                    const l = (t||"").toLowerCase();
-                    if(l.includes('funciona') || l.includes('adequada') || l==='regularizado' || l==='sim') return 'bg-ok';
-                    if(l.includes('contratação') || l.includes('inadequada') || l==='planejamento') return 'bg-warning';
-                    return 'bg-error';
-                };
-                const sitClass = (t) => {
-                    const l = (t||"").toLowerCase();
-                    if(l.includes('adequada')) return 'sit-adequada';
-                    if(l.includes('inadequada')) return 'sit-inadequada';
-                    if(l.includes('não ocupado')) return 'sit-nao-ocupado';
-                    return 'sit-contratacao';
-                };
-                
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-4 py-3 font-bold text-slate-800 sticky left-0 bg-white border-r border-b">${item.id}</td>
-                        <td class="px-3 py-3 border-b text-center"><div class="percent-badge text-white" style="background-color: ${bgCol}; border-color: ${bgCol};">${comp}%</div></td>
-                        <td class="px-3 py-3 text-slate-500 border-b">${item.nat}</td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.mob)}">${item.mob}</span></td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.lim)}">${item.lim}</span></td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.jar)}">${item.jar}</span></td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.int)}">${item.int}</span></td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.tel)}">${item.tel}</span></td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.vig)}">${item.vig}</span></td>
-                        <td class="px-3 py-3 border-b"><span class="status-badge ${statClass(item.imp)}">${item.imp}</span></td>
-                        <td class="px-4 py-3 text-center border-b"><span class="status-badge ${sitClass(item.sit)} uppercase">${item.sit}</span></td>
-                    </tr>
-                `;
-            });
-        }
-
-        let markersLayerInfra;
-        function initMapInfra() {
-            mapInfra = L.map('map', { minZoom: 4, maxBounds: [[-35, -75], [5, -30]] }).setView([-15.78, -52], 4);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapInfra);
-            markersLayerInfra = L.layerGroup().addTo(mapInfra);
-            renderMarkersInfra(unitsData);
-        }
-
-        function renderMarkersInfra(data) {
-            markersLayerInfra.clearLayers();
-            data.forEach(u => {
-                if (!u.coords) return;
-                const color = u.sit.includes('Adequada') ? '#16a34a' : u.sit.includes('Inadequada') ? '#fb923c' : (u.sit.includes('Ocupado') ? '#dc2626' : '#3b82f6');
-                const marker = L.circleMarker(u.coords, { radius: 7, fillColor: color, color: "#fff", weight: 1.5, fillOpacity: 0.9 });
-                marker.bindTooltip(u.city, { permanent: true, direction: 'top', className: 'city-label', offset: [0, -8] });
-                markersLayerInfra.addLayer(marker);
-            });
-        }
-
-        function applyFiltersInfra() {
-            const m = document.getElementById('municipioFilter').value;
-            const n = document.getElementById('natureFilter').value;
-            const s = document.getElementById('situacaoFilter').value;
-            
-            const filtered = unitsData.filter(u => (m==='all'||u.city===m) && (n==='all'||u.nat===n) && (s==='all'||u.sit===s));
-            renderTableInfra(filtered);
-            renderMarkersInfra(filtered);
-        }
-
-        function initCharts() {
-            try { Chart.register(ChartDataLabels); } catch(e) {}
-            const situations = { "Adequada": 0, "Inadequada": 0, "Não ocupado": 0, "Contratação": 0 };
-            const naturezas = { "Coworking": 0, "Locado - CNPJ": 0, "Locado - CPF": 0, "Edif. Público": 0 };
-            const mobStatus = { "Regularizado": 0, "Ausente": 0, "Planejamento": 0, "N/A": 0 };
-            
-            const fields = ['mob', 'lim', 'jar', 'int', 'tel', 'vig', 'imp'];
-            const labels = ['Mob.', 'Limpeza', 'Jardim', 'Internet', 'Tel.', 'Vigil.', 'Impres.'];
-            const stats = { mob: { ok: 0, app: 0 }, lim: { ok: 0, app: 0 }, jar: { ok: 0, app: 0 }, int: { ok: 0, app: 0 }, tel: { ok: 0, app: 0 }, vig: { ok: 0, app: 0 }, imp: { ok: 0, app: 0 } };
-
-            unitsData.forEach(u => {
-                if (u.sit.includes("Adequada")) situations["Adequada"]++;
-                else if (u.sit.includes("Inadequada")) situations["Inadequada"]++;
-                else if (u.sit.includes("Não ocupado")) situations["Não ocupado"]++;
-                else situations["Contratação"]++;
-                if (naturezas[u.nat] !== undefined) naturezas[u.nat]++;
-                if (mobStatus[u.mob] !== undefined) mobStatus[u.mob]++; else mobStatus["N/A"]++;
-
-                fields.forEach(f => {
-                    const val = (u[f] || "").toLowerCase();
-                    if (val !== 'n/a' && !val.includes('não se aplica')) {
-                        stats[f].app++;
-                        if (val === 'sim' || val === 'funcionando' || val === 'regularizado' || val === 'funcionamento') stats[f].ok++;
-                    }
-                });
-            });
-
-            const servicesData = fields.map(f => stats[f].app > 0 ? Math.round((stats[f].ok / stats[f].app) * 100) : 0);
-            const cfg = { maintainAspectRatio: false, plugins: { datalabels: { color: '#fff', font: { weight: 'bold', size: 9 } }, legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } };
-            
-            new Chart(document.getElementById('situationChart'), { type: 'doughnut', data: { labels: Object.keys(situations), datasets: [{ data: Object.values(situations), backgroundColor: ['#16a34a', '#fb923c', '#dc2626', '#3b82f6'] }] }, options: cfg });
-            new Chart(document.getElementById('natureChart'), { type: 'pie', data: { labels: Object.keys(naturezas), datasets: [{ data: Object.values(naturezas), backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#64748b'] }] }, options: cfg });
-            new Chart(document.getElementById('mobDetailedChart'), { type: 'doughnut', data: { labels: Object.keys(mobStatus), datasets: [{ data: Object.values(mobStatus), backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#94a3b8'] }] }, options: cfg });
-            
-            new Chart(document.getElementById('servicesChart'), { 
-                type: 'bar', 
-                data: { labels: labels, datasets: [{ label: '% de Sucesso', data: servicesData, backgroundColor: '#3b82f6', borderRadius: 6 }] }, 
-                options: { 
-                    maintainAspectRatio: false,
-                    indexAxis: 'x',
-                    scales: {
-                        y: { beginAtZero: true, max: 115, grid: { borderDash: [2, 4] } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: { 
-                        legend: { display: false }, 
-                        datalabels: { 
-                            color: '#334155', 
-                            anchor: 'end', 
-                            align: 'top', 
-                            offset: -4,
-                            font: { weight: 'bold', size: 11 },
-                            formatter: (v) => v + '%' 
-                        } 
-                    } 
-                } 
-            });
-        }
-
 
         // ==========================================
         // DADOS E LÓGICA: RECURSOS HUMANOS
@@ -775,8 +460,8 @@
 
         function renderRhTable() {
             const tbody = document.querySelector('#rhTable tbody');
+            if(!tbody) return;
             const search = document.getElementById('searchInputRh').value.toLowerCase();
-            tbody.innerHTML = '';
             
             const sorted = [...rhData.filter(i => i.id.toLowerCase().includes(search))].sort((a, b) => {
                 let vA = (rhSort.key === 'totalMeta') ? a.mSup+a.mMed : (rhSort.key === 'totalReal') ? a.rSup+a.rMed : (rhSort.key === 'isFull') ? (a.rSup+a.rMed >= a.mSup+a.mMed) : a[rhSort.key];
@@ -785,9 +470,10 @@
                 return rhSort.dir === 'asc' ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
             });
 
+            let htmlBuffer = '';
             sorted.forEach(item => {
                 const tm = item.mSup + item.mMed, tr = item.rSup + item.rMed, full = tr >= tm;
-                tbody.innerHTML += `
+                htmlBuffer += `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
                         <td class="px-4 py-3 font-bold text-slate-700 sticky left-0 bg-white border-r">${item.id}</td>
                         <td class="px-3 py-3 text-center text-slate-400">${item.mSup}</td>
@@ -800,6 +486,7 @@
                     </tr>
                 `;
             });
+            tbody.innerHTML = htmlBuffer;
 
             const tMeta = rhData.reduce((acc, curr) => acc + curr.mSup + curr.mMed, 0);
             const tReal = rhData.reduce((acc, curr) => acc + curr.rSup + curr.rMed, 0);
@@ -810,7 +497,7 @@
 
 
         // ==========================================
-        // DADOS E LÓGICA: COMPETÊNCIAS (Novo index 2)
+        // DADOS E LÓGICA: COMPETÊNCIAS
         // ==========================================
         const resumoMapaComp = [
             { n: "Maceió", lat: -9.66, lng: -35.73, c: 4.3, a: 2.9 }, { n: "Altamira", lat: -3.20, lng: -52.20, c: 4.6, a: 3.9 },
@@ -928,7 +615,7 @@
         }
 
         function initCompApp() {
-            // Mapa
+            if(mapComp) return; // Evita duplicação
             mapComp = L.map('map-comp', { minZoom: 4, maxBounds: [[-35, -75], [5, -30]] }).setView([-15.0, -55.0], 4);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapComp);
             
@@ -997,8 +684,9 @@
         function destacarNotasVerde() {
             const nomesEspecificos = ["Ricardo Cavalcante Barbosa Junior", "Herodoto Jean de Sales"];
             const funcoesUnidades = [{ unidade: "Campo Grande", funcao: "Assessor" }, { unidade: "Atalaia do Norte", funcao: "Chefe" }];
+            const linhasDetalhe = document.querySelectorAll('#tabela-detalhada-comp tbody tr');
             
-            document.querySelectorAll('#tabela-detalhada-comp tbody tr').forEach(linha => {
+            linhasDetalhe.forEach(linha => {
                 const nome = linha.cells[0].textContent.trim();
                 const unid = linha.cells[1].textContent.trim();
                 const func = linha.cells[2].textContent.trim();
@@ -1024,7 +712,7 @@
         }
 
         // ==========================================
-        // DADOS E LÓGICA: ORÇAMENTO 2026 (Novo index 3)
+        // DADOS E LÓGICA: ORÇAMENTO 2026
         // ==========================================
         const orcData = [
             {esc: "Distrital", cid: "Boa Vista", o26: 3682633.02, ses: 5100169.41, aum: 1417536.39, qtd: 10, lat: 2.82, lng: -60.67},
@@ -1080,6 +768,7 @@
         }
 
         function initOrcApp() {
+            if (mapOrc) return; // Evita reinicialização do mapa
             mapOrc = L.map('map-orc', { minZoom: 4, maxBounds: [[-35, -75], [5, -30]] }).setView([-14, -54], 4);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapOrc);
             
@@ -1095,7 +784,8 @@
 
             document.getElementById('searchOrc').addEventListener('input', function() {
                 const term = this.value.toLowerCase();
-                document.querySelectorAll('#tbody-orc tr').forEach(tr => {
+                const rows = document.querySelectorAll('#tbody-orc tr');
+                rows.forEach(tr => {
                     tr.style.display = tr.innerText.toLowerCase().includes(term) ? '' : 'none';
                 });
             });
@@ -1117,10 +807,11 @@
         function renderOrcTable() {
             const tbody = document.getElementById('tbody-orc');
             if(!tbody) return;
-            tbody.innerHTML = '';
+            
+            let htmlBuffer = '';
             orcData.forEach(d => {
                 const color = getOrcColor(d.aum);
-                tbody.innerHTML += `
+                htmlBuffer += `
                     <tr id="row-orc-${d.cid.replace(/\s+/g, '-')}" class="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer" onclick="mapOrc.setView([${d.lat}, ${d.lng}], 6)">
                         <td class="px-4 py-3 text-slate-500">${d.esc}</td>
                         <td class="px-4 py-3 font-bold text-slate-800">${d.cid}</td>
@@ -1131,6 +822,7 @@
                     </tr>
                 `;
             });
+            tbody.innerHTML = htmlBuffer;
         }
 
 
@@ -1138,15 +830,6 @@
         // INICIALIZAÇÃO GERAL
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
-            initMunicipioFilter();
-            renderTableInfra(unitsData);
-            initMapInfra();
-            setTimeout(initCharts, 300);
-            
-            // Listeners Infra
-            document.getElementById('municipioFilter').addEventListener('change', applyFiltersInfra);
-            document.getElementById('natureFilter').addEventListener('change', applyFiltersInfra);
-            document.getElementById('situacaoFilter').addEventListener('change', applyFiltersInfra);
             document.getElementById('searchInputRh').addEventListener('input', renderRhTable);
             
             // Garante que a aba de Utilidades (React) renderize corretamente o mapa na carga inicial
@@ -1160,6 +843,7 @@
         const { useState, useMemo, useEffect, useRef } = React;
         const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList } = window.Recharts;
 
+        // Cache estático de Cores e Constantes fora do escopo do componente para evitar recriação
         const COLORS_STATUS = { "No Prazo": "#10b981", "Em Atraso": "#ef4444", "Pendente": "#f59e0b" };
         
         const cityMetadata = {
@@ -1182,101 +866,308 @@
         };
 
         const rawData = [
-            { cidade: "Rio Branco (AC)", valor: 4858.00, mes: "Dezembro", emissao: "01/01/2026", vencimento: "19/01/2026", pagamento: "18/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Outubro", emissao: "10/10/2025", vencimento: "20/10/2025", pagamento: "18/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Novembro", emissao: "13/11/2025", vencimento: "10/12/2025", pagamento: "03/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Dezembro", emissao: "23/12/2025", vencimento: "12/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Abril", emissao: "30/05/2025", vencimento: "06/06/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Maio", emissao: "30/05/2025", vencimento: "06/06/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Junho", emissao: "30/06/2025", vencimento: "02/07/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Julho", emissao: "30/07/2025", vencimento: "08/08/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Agosto", emissao: "30/08/2025", vencimento: "02/09/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Setembro", emissao: "30/09/2025", vencimento: "02/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Outubro", emissao: "30/10/2025", vencimento: "02/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Novembro", emissao: "30/11/2025", vencimento: "02/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Dezembro", emissao: "30/12/2025", vencimento: "02/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Junho", emissao: "18/06/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Julho", emissao: "18/06/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Agosto", emissao: "21/07/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Setembro", emissao: "21/08/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Outubro", emissao: "18/09/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Novembro", emissao: "18/10/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Dezembro", emissao: "04/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Dezembro", emissao: "02/12/2025", vencimento: "15/12/2025", pagamento: "15/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Maio", emissao: "02/06/2025", vencimento: "17/06/2025", pagamento: "17/06/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Junho", emissao: "01/07/2025", vencimento: "15/07/2025", pagamento: "15/07/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Julho", emissao: "01/08/2025", vencimento: "15/08/2025", pagamento: "15/08/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Agosto", emissao: "01/09/2025", vencimento: "15/09/2025", pagamento: "15/09/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Setembro", emissao: "01/10/2025", vencimento: "15/10/2025", pagamento: "15/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Novembro", emissao: "03/11/2025", vencimento: "15/11/2025", pagamento: "15/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "15/12/2025", pagamento: "15/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Canarana (MT)", valor: 5000.00, mes: "Outubro", emissao: "05/11/2025", vencimento: "18/11/2025", pagamento: "18/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Canarana (MT)", valor: 5000.00, mes: "Novembro", emissao: "01/12/2025", vencimento: "18/12/2025", pagamento: "16/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Junho", emissao: "06/06/2025", vencimento: "23/06/2025", pagamento: "20/06/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Julho", emissao: "26/06/2025", vencimento: "22/07/2025", pagamento: "22/07/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Agosto", emissao: "26/06/2025", vencimento: "22/08/2025", pagamento: "22/08/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Setembro", emissao: "26/06/2025", vencimento: "22/09/2025", pagamento: "19/09/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Outubro", emissao: "26/06/2025", vencimento: "22/10/2025", pagamento: "20/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Novembro", emissao: "26/06/2025", vencimento: "24/11/2025", pagamento: "24/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Colíder", valor: 3900.00, mes: "Dezembro", emissao: "26/06/2025", vencimento: "22/12/2025", pagamento: "19/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Novembro", emissao: "17/11/2025", vencimento: "25/11/2025", pagamento: "24/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Dezembro", emissao: "04/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Junho", emissao: "18/06/2025", vencimento: "28/06/2025", pagamento: "28/06/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Julho", emissao: "10/07/2025", vencimento: "20/07/2025", pagamento: "20/07/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Agosto", emissao: "13/08/2025", vencimento: "23/08/2025", pagamento: "23/08/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Setembro", emissao: "10/09/2025", vencimento: "20/09/2025", pagamento: "20/09/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Outubro", emissao: "15/10/2025", vencimento: "26/10/2025", pagamento: "26/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Novembro", emissao: "10/11/2025", vencimento: "21/11/2025", pagamento: "21/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cuiabá", valor: 5800.00, mes: "Dezembro", emissao: "11/12/2025", vencimento: "30/01/2026", pagamento: "16/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Novembro", emissao: "01/12/2025", vencimento: "15/12/2025", pagamento: "15/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "19/01/2026", pagamento: "19/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Outubro", emissao: "31/10/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Novembro", emissao: "02/12/2025", vencimento: "19/12/2025", pagamento: "17/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Gov Valadares", valor: 8000.00, mes: "Outubro", emissao: "24/09/2025", vencimento: "22/10/2025", pagamento: "22/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "João Pessoa (PB)", valor: 6000.00, mes: "Novembro", emissao: "04/11/2025", vencimento: "15/11/2025", pagamento: "15/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Maceió (AL)", valor: 6000.00, mes: "Outubro", emissao: "28/10/2025", vencimento: "15/11/2025", pagamento: "15/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Palmas", valor: 7600.00, mes: "Outubro", emissao: "22/10/2025", vencimento: "28/10/2025", pagamento: "28/10/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Palmas", valor: 7600.00, mes: "Novembro", emissao: "22/10/2025", vencimento: "28/11/2025", pagamento: "28/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Palmas", valor: 7600.00, mes: "Dezembro", emissao: "22/10/2025", vencimento: "28/12/2025", pagamento: "23/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Recife (PE)", valor: 17000.00, mes: "Janeiro", emissao: "06/01/2026", vencimento: "16/01/2026", pagamento: "16/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Redenção", valor: 6000.00, mes: "Outubro", emissao: "16/06/2025", vencimento: "10/11/2025", pagamento: "08/11/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Salvador (BA)", valor: 11000.00, mes: "Novembro", emissao: "02/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Tabatinga", valor: 7500.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "26/12/2025", pagamento: "19/12/2025", tipo: "Locação de Imóveis" },
-            { cidade: "Cacoal", valor: 4554.00, mes: "Janeiro", emissao: "05/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Macapá", valor: 11300.00, mes: "Janeiro", emissao: "09/01/2026", vencimento: "19/01/2026", pagamento: "19/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Rio Branco (AC)", valor: 4858.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "19/01/2026", pagamento: "18/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Rio Branco (AC)", valor: 4858.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "19/02/2026", pagamento: "18/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Rio Branco (AC)", valor: 4858.00, mes: "Março", emissao: "01/03/2026", vencimento: "19/03/2026", pagamento: "18/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Rio Branco (AC)", valor: 4858.00, mes: "Abril", emissao: "01/04/2026", vencimento: "19/04/2026", pagamento: "18/04/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Janeiro", emissao: "10/01/2026", vencimento: "20/01/2026", pagamento: "18/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Fevereiro", emissao: "10/02/2026", vencimento: "20/02/2026", pagamento: "18/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Março", emissao: "10/03/2026", vencimento: "20/03/2026", pagamento: "18/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Altamira (PA)", valor: 6000.00, mes: "Abril", emissao: "10/04/2026", vencimento: "20/04/2026", pagamento: "18/04/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Janeiro", emissao: "02/01/2026", vencimento: "06/01/2026", pagamento: "06/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Fevereiro", emissao: "02/02/2026", vencimento: "06/02/2026", pagamento: "06/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Março", emissao: "02/03/2026", vencimento: "06/03/2026", pagamento: "06/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Abril", emissao: "02/04/2026", vencimento: "06/04/2026", pagamento: "06/04/2026", tipo: "Locação de Imóveis" },
+            // Alugueres
+          
+    // --- Tefé (Assinatura: Mar/2025 | Vigência: 12 meses -> até Fev/2026) ---
+    { cidade: "Tefé", valor: 3000.00, mes: "Março", emissao: "01/03/2025", vencimento: "10/03/2025", pagamento: "10/03/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Abril", emissao: "01/04/2025", vencimento: "10/04/2025", pagamento: "10/04/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Tefé", valor: 3000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
 
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Janeiro", emissao: "04/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Fevereiro", emissao: "04/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Março", emissao: "04/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Barra do Garças", valor: 2500.00, mes: "Abril", emissao: "04/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+    // --- Gov Valadares (Assinatura: Mar/2025 | Vigência: 12 meses -> até Fev/2026) ---
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Março", emissao: "01/03/2025", vencimento: "10/03/2025", pagamento: "10/03/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Abril", emissao: "01/04/2025", vencimento: "10/04/2025", pagamento: "10/04/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Gov Valadares", valor: 8000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
 
-            { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Janeiro", emissao: "02/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Fevereiro", emissao: "02/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Março", emissao: "02/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Abril", emissao: "02/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Locação de Imóveis" },
+    // --- Tabatinga (Assinatura: Mar/2025 | Vigência: 12 meses -> até Fev/2026) ---
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Março", emissao: "01/03/2025", vencimento: "10/03/2025", pagamento: "10/03/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Abril", emissao: "01/04/2025", vencimento: "10/04/2025", pagamento: "10/04/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Tabatinga", valor: 7500.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
 
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Janeiro", emissao: "02/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Fevereiro", emissao: "02/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Março", emissao: "02/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Campo Grande", valor: 8000.00, mes: "Abril", emissao: "02/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Locação de Imóveis" },
+    // --- Atalaia do Norte (Assinatura: Abr/2025 | Vigência: 12 meses -> até Mar/2026) ---
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Abril", emissao: "01/04/2025", vencimento: "10/04/2025", pagamento: "10/04/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Atalaia do Norte", valor: 5000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
 
-            { cidade: "Canarana (MT)", valor: 5000.00, mes: "Janeiro", emissao: "05/01/2026", vencimento: "18/01/2026", pagamento: "18/01/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Canarana (MT)", valor: 5000.00, mes: "Fevereiro", emissao: "05/02/2026", vencimento: "18/02/2026", pagamento: "18/02/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Canarana (MT)", valor: 5000.00, mes: "Março", emissao: "05/03/2026", vencimento: "18/03/2026", pagamento: "18/03/2026", tipo: "Locação de Imóveis" },
-            { cidade: "Canarana (MT)", valor: 5000.00, mes: "Abril", emissao: "05/04/2026", vencimento: "18/04/2026", pagamento: "18/04/2026", tipo: "Locação de Imóveis" },
+    // --- Campo Grande (Assinatura: Abr/2025 | Vigência: 12 meses -> até Mar/2026) ---
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Abril", emissao: "01/04/2025", vencimento: "10/04/2025", pagamento: "10/04/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Campo Grande", valor: 8000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
 
+    // --- Redenção (Assinatura: Abr/2025 | Vigência: 12 meses -> até Mar/2026) ---
+    { cidade: "Redenção", valor: 6000.00, mes: "Abril", emissao: "01/04/2025", vencimento: "10/04/2025", pagamento: "10/04/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Redenção", valor: 6000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+
+    // --- Colíder (Assinatura: Mai/2025 -> Até Abr/2026) ---
+    { cidade: "Colíder", valor: 3900.00, mes: "Maio", emissao: "01/05/2025", vencimento: "10/05/2025", pagamento: "10/05/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Colíder", valor: 3900.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Barra do Garças (Assinatura: Jun/2025 -> Até Abr/2026) ---
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Barra do Garças", valor: 2500.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Cuiabá (Assinatura: Jun/2025 -> Até Abr/2026 | Valor da tabela: R$ 7000.00) ---
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Junho", emissao: "01/06/2025", vencimento: "10/06/2025", pagamento: "10/06/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cuiabá", valor: 7000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Boa Vista (RR) (Assinatura: Jul/2025 -> Até Abr/2026) ---
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Julho", emissao: "01/07/2025", vencimento: "10/07/2025", pagamento: "10/07/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Agosto", emissao: "01/08/2025", vencimento: "10/08/2025", pagamento: "10/08/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Setembro", emissao: "01/09/2025", vencimento: "10/09/2025", pagamento: "10/09/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Boa Vista (RR)", valor: 23800.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Altamira (PA) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Altamira (PA)", valor: 6000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Canarana (MT) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Canarana (MT)", valor: 5000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Maceió (AL) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Maceió (AL)", valor: 6000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Parintins (AM) (Assinatura: Out/2025 -> Até Abr/2026 | Valor: R$ 5800.00) ---
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Parintins (AM)", valor: 5800.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- São Gabriel da Cachoeira (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Gabriel da Cachoeira", valor: 2900.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- São Luis (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "São Luis", valor: 10908.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Luis", valor: 10908.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Luis", valor: 10908.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Luis", valor: 10908.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Luis", valor: 10908.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Luis", valor: 10908.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Luis", valor: 10908.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Cruzeiro do Sul (AC) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cruzeiro do Sul (AC)", valor: 3700.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Florianópolis (SC) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Florianópolis (SC)", valor: 12100.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Curitiba (PR) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Curitiba (PR)", valor: 9600.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Salvador (BA) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Salvador (BA)", valor: 11000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Lábrea (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Lábrea", valor: 9000.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Lábrea", valor: 9000.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Lábrea", valor: 9000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Lábrea", valor: 9000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Lábrea", valor: 9000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Lábrea", valor: 9000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Lábrea", valor: 9000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- João Pessoa (PB) (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "João Pessoa (PB)", valor: 7500.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Palmas (Assinatura: Out/2025 -> Até Abr/2026) ---
+    { cidade: "Palmas", valor: 7600.00, mes: "Outubro", emissao: "01/10/2025", vencimento: "10/10/2025", pagamento: "10/10/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Palmas", valor: 7600.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Palmas", valor: 7600.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Palmas", valor: 7600.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Palmas", valor: 7600.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Palmas", valor: 7600.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Palmas", valor: 7600.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- São Félix do Araguaia (Assinatura: Nov/2025 -> Até Abr/2026) ---
+    { cidade: "São Félix do Araguaia", valor: 9800.00, mes: "Novembro", emissao: "01/11/2025", vencimento: "10/11/2025", pagamento: "10/11/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Félix do Araguaia", valor: 9800.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "São Félix do Araguaia", valor: 9800.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Félix do Araguaia", valor: 9800.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Félix do Araguaia", valor: 9800.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "São Félix do Araguaia", valor: 9800.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Recife (PE) (Assinatura: Dez/2025 -> Até Abr/2026) ---
+    { cidade: "Recife (PE)", valor: 17000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Recife (PE)", valor: 17000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Recife (PE)", valor: 17000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Recife (PE)", valor: 17000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Recife (PE)", valor: 17000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Rio Branco (AC) (Assinatura: Dez/2025 -> Até Abr/2026 | Valor: R$ 6940.00) ---
+    { cidade: "Rio Branco (AC)", valor: 6940.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Rio Branco (AC)", valor: 6940.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Rio Branco (AC)", valor: 6940.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Rio Branco (AC)", valor: 6940.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Rio Branco (AC)", valor: 6940.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Belém (Assinatura: Dez/2025 | Vigência: 3 meses -> até Fev/2026) ---
+    { cidade: "Belém", valor: 13880.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Belém", valor: 13880.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Belém", valor: 13880.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+
+    // --- Itaituba (Assinatura: Dez/2025 -> Até Abr/2026) ---
+    { cidade: "Itaituba", valor: 4000.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Itaituba", valor: 4000.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Itaituba", valor: 4000.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Itaituba", valor: 4000.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Itaituba", valor: 4000.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Cacoal (Assinatura: Dez/2025 -> Até Abr/2026) ---
+    { cidade: "Cacoal", valor: 4554.00, mes: "Dezembro", emissao: "01/12/2025", vencimento: "10/12/2025", pagamento: "10/12/2025", tipo: "Locação de Imóveis" },
+    { cidade: "Cacoal", valor: 4554.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cacoal", valor: 4554.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cacoal", valor: 4554.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Cacoal", valor: 4554.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+
+    // --- Macapá (Assinatura: Jan/2026 -> Até Abr/2026) ---
+    { cidade: "Macapá", valor: 11300.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "10/01/2026", pagamento: "10/01/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Macapá", valor: 11300.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "10/02/2026", pagamento: "10/02/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Macapá", valor: 11300.00, mes: "Março", emissao: "01/03/2026", vencimento: "10/03/2026", pagamento: "10/03/2026", tipo: "Locação de Imóveis" },
+    { cidade: "Macapá", valor: 11300.00, mes: "Abril", emissao: "01/04/2026", vencimento: "10/04/2026", pagamento: "10/04/2026", tipo: "Locação de Imóveis" },
+      
             // Energia
             { cidade: "Atalaia do Norte", valor: 445.37, mes: "Junho", emissao: "09/06/2025", vencimento: "08/07/2025", pagamento: "09/07/2025", tipo: "Energia Elétrica" },
             { cidade: "Atalaia do Norte", valor: 472.63, mes: "Julho", emissao: "11/07/2025", vencimento: "07/08/2025", pagamento: "07/08/2025", tipo: "Energia Elétrica" },
@@ -1317,59 +1208,182 @@
             { cidade: "Tabatinga", valor: 421.51, mes: "Setembro", emissao: "11/09/2025", vencimento: "05/11/2025", pagamento: "05/11/2025", tipo: "Energia Elétrica" },
             { cidade: "Tabatinga", valor: 425.72, mes: "Outubro", emissao: "27/10/2025", vencimento: "05/12/2025", pagamento: "25/11/2025", tipo: "Energia Elétrica" },
             { cidade: "Tabatinga", valor: 533.42, mes: "Novembro", emissao: "11/11/2025", vencimento: "05/01/2026", pagamento: "05/12/2025", tipo: "Energia Elétrica" },
+          { cidade: "Atalaia do Norte", valor: 936.58, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Atalaia do Norte", valor: 936.58, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Atalaia do Norte", valor: 936.58, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Atalaia do Norte", valor: 936.58, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
 
+{ cidade: "Barra do Garças", valor: 660.31, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Barra do Garças", valor: 660.31, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Barra do Garças", valor: 660.31, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Barra do Garças", valor: 660.31, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Canarana (MT)", valor: 125.08, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Canarana (MT)", valor: 125.08, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Canarana (MT)", valor: 125.08, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Colíder", valor: 537.72, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Colíder", valor: 537.72, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Colíder", valor: 537.72, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Colíder", valor: 537.72, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Cruzeiro do Sul (AC)", valor: 414.09, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Cruzeiro do Sul (AC)", valor: 414.09, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Cruzeiro do Sul (AC)", valor: 414.09, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Cruzeiro do Sul (AC)", valor: 414.09, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Lábrea (AM)", valor: 84.30, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Lábrea (AM)", valor: 84.30, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Lábrea (AM)", valor: 84.30, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Parintins (AM)", valor: 129.87, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Parintins (AM)", valor: 129.87, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Parintins (AM)", valor: 129.87, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Parintins (AM)", valor: 129.87, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Redenção", valor: 221.29, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Redenção", valor: 221.29, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Redenção", valor: 221.29, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Redenção", valor: 221.29, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "São Gabriel da Cachoeira (AM)", valor: 42.15, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "São Gabriel da Cachoeira (AM)", valor: 42.15, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "São Gabriel da Cachoeira (AM)", valor: 42.15, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "São Gabriel da Cachoeira (AM)", valor: 42.15, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+
+{ cidade: "Tabatinga", valor: 533.42, mes: "Janeiro", emissao: "01/01/2026", vencimento: "15/01/2026", pagamento: "15/01/2026", tipo: "Energia Elétrica" },
+{ cidade: "Tabatinga", valor: 533.42, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "15/02/2026", pagamento: "15/02/2026", tipo: "Energia Elétrica" },
+{ cidade: "Tabatinga", valor: 533.42, mes: "Março", emissao: "01/03/2026", vencimento: "15/03/2026", pagamento: "15/03/2026", tipo: "Energia Elétrica" },
+{ cidade: "Tabatinga", valor: 533.42, mes: "Abril", emissao: "01/04/2026", vencimento: "15/04/2026", pagamento: "15/04/2026", tipo: "Energia Elétrica" },
+          // ATALAIA DO NORTE (continuação até abril/2026)
+{ cidade: "Atalaia do Norte", valor: 150.72, mes: "Dezembro", emissao: "09/12/2025", vencimento: "28/01/2026", pagamento: "28/01/2026", tipo: "Água e Esgoto" },
+{ cidade: "Atalaia do Norte", valor: 150.72, mes: "Janeiro", emissao: "08/01/2026", vencimento: "28/02/2026", pagamento: "27/02/2026", tipo: "Água e Esgoto" },
+{ cidade: "Atalaia do Norte", valor: 150.72, mes: "Fevereiro", emissao: "10/02/2026", vencimento: "28/03/2026", pagamento: "27/03/2026", tipo: "Água e Esgoto" },
+{ cidade: "Atalaia do Norte", valor: 150.72, mes: "Março", emissao: "10/03/2026", vencimento: "28/04/2026", pagamento: "27/04/2026", tipo: "Água e Esgoto" },
+{ cidade: "Atalaia do Norte", valor: 150.72, mes: "Abril", emissao: "09/04/2026", vencimento: "28/05/2026", pagamento: "27/05/2026", tipo: "Água e Esgoto" },
+
+// BARRA DO GARÇAS (continuação até abril/2026)
+{ cidade: "Barra do Garças", valor: 168.80, mes: "Janeiro", emissao: "06/01/2026", vencimento: "22/01/2026", pagamento: "21/01/2026", tipo: "Água e Esgoto" },
+{ cidade: "Barra do Garças", valor: 168.80, mes: "Fevereiro", emissao: "05/02/2026", vencimento: "22/02/2026", pagamento: "21/02/2026", tipo: "Água e Esgoto" },
+{ cidade: "Barra do Garças", valor: 168.80, mes: "Março", emissao: "06/03/2026", vencimento: "22/03/2026", pagamento: "21/03/2026", tipo: "Água e Esgoto" },
+{ cidade: "Barra do Garças", valor: 168.80, mes: "Abril", emissao: "07/04/2026", vencimento: "22/04/2026", pagamento: "21/04/2026", tipo: "Água e Esgoto" },
+
+// CANARANA (continuação até abril/2026)
+{ cidade: "Canarana (MT)", valor: 65.90, mes: "Fevereiro", emissao: "05/02/2026", vencimento: "13/02/2026", pagamento: "13/02/2026", tipo: "Água e Esgoto" },
+{ cidade: "Canarana (MT)", valor: 65.90, mes: "Março", emissao: "05/03/2026", vencimento: "13/03/2026", pagamento: "13/03/2026", tipo: "Água e Esgoto" },
+{ cidade: "Canarana (MT)", valor: 65.90, mes: "Abril", emissao: "05/04/2026", vencimento: "13/04/2026", pagamento: "13/04/2026", tipo: "Água e Esgoto" },
+
+// TABATINGA (continuação até abril/2026)
+{ cidade: "Tabatinga", valor: 194.85, mes: "Outubro", emissao: "17/11/2025", vencimento: "28/11/2025", pagamento: "28/11/2025", tipo: "Água e Esgoto" },
+{ cidade: "Tabatinga", valor: 194.85, mes: "Novembro", emissao: "18/12/2025", vencimento: "28/12/2025", pagamento: "28/12/2025", tipo: "Água e Esgoto" },
+{ cidade: "Tabatinga", valor: 194.85, mes: "Dezembro", emissao: "18/01/2026", vencimento: "28/01/2026", pagamento: "28/01/2026", tipo: "Água e Esgoto" },
+{ cidade: "Tabatinga", valor: 194.85, mes: "Janeiro", emissao: "18/02/2026", vencimento: "28/02/2026", pagamento: "28/02/2026", tipo: "Água e Esgoto" },
+{ cidade: "Tabatinga", valor: 194.85, mes: "Fevereiro", emissao: "18/03/2026", vencimento: "28/03/2026", pagamento: "28/03/2026", tipo: "Água e Esgoto" },
+{ cidade: "Tabatinga", valor: 194.85, mes: "Março", emissao: "18/04/2026", vencimento: "28/04/2026", pagamento: "28/04/2026", tipo: "Água e Esgoto" },
+{ cidade: "Tabatinga", valor: 194.85, mes: "Abril", emissao: "18/05/2026", vencimento: "28/05/2026", pagamento: "28/05/2026", tipo: "Água e Esgoto" },
+
+// BOA VISTA (continuação até abril/2026)
+{ cidade: "Boa Vista", valor: 98.35, mes: "Fevereiro", emissao: "12/02/2026", vencimento: "15/03/2026", pagamento: "14/03/2026", tipo: "Água e Esgoto" },
+{ cidade: "Boa Vista", valor: 98.35, mes: "Março", emissao: "12/03/2026", vencimento: "15/04/2026", pagamento: "14/04/2026", tipo: "Água e Esgoto" },
+{ cidade: "Boa Vista", valor: 98.35, mes: "Abril", emissao: "12/04/2026", vencimento: "15/05/2026", pagamento: "14/05/2026", tipo: "Água e Esgoto" },
+
+// PARINTINS (continuação até abril/2026)
+{ cidade: "Parintins (AM)", valor: 150.00, mes: "Janeiro", emissao: "01/01/2026", vencimento: "28/01/2026", pagamento: "27/01/2026", tipo: "Água e Esgoto" },
+{ cidade: "Parintins (AM)", valor: 150.00, mes: "Fevereiro", emissao: "01/02/2026", vencimento: "28/02/2026", pagamento: "27/02/2026", tipo: "Água e Esgoto" },
+{ cidade: "Parintins (AM)", valor: 150.00, mes: "Março", emissao: "01/03/2026", vencimento: "28/03/2026", pagamento: "27/03/2026", tipo: "Água e Esgoto" },
+{ cidade: "Parintins (AM)", valor: 150.00, mes: "Abril", emissao: "01/04/2026", vencimento: "28/04/2026", pagamento: "27/04/2026", tipo: "Água e Esgoto" },
+          
             // Água
-            { cidade: "Atalaia do Norte", valor: 150.72, mes: "Julho", emissao: "10/07/2025", vencimento: "28/08/2025", pagamento: "28/08/2025", tipo: "Água e Esgoto" },
-            { cidade: "Atalaia do Norte", valor: 150.72, mes: "Agosto", emissao: "12/08/2025", vencimento: "28/09/2025", pagamento: "28/09/2025", tipo: "Água e Esgoto" },
-            { cidade: "Atalaia do Norte", valor: 150.72, mes: "Setembro", emissao: "03/09/2025", vencimento: "28/10/2025", pagamento: "28/10/2025", tipo: "Água e Esgoto" },
-            { cidade: "Atalaia do Norte", valor: 150.72, mes: "Outubro", emissao: "08/10/2025", vencimento: "28/11/2025", pagamento: "28/11/2025", tipo: "Água e Esgoto" },
-            { cidade: "Atalaia do Norte", valor: 150.72, mes: "Novembro", emissao: "10/11/2025", vencimento: "28/12/2025", tipo: "Água e Esgoto" },
-            { cidade: "Barra do Garças", valor: 168.80, mes: "Agosto", emissao: "06/08/2025", vencimento: "21/08/2025", pagamento: "15/08/2025", tipo: "Água e Esgoto" },
-            { cidade: "Barra do Garças", valor: 168.85, mes: "Setembro", emissao: "02/09/2025", vencimento: "22/09/2025", pagamento: "22/09/2025", tipo: "Água e Esgoto" },
-            { cidade: "Barra do Garças", valor: 168.80, mes: "Outubro", emissao: "03/10/2025", vencimento: "22/10/2025", pagamento: "22/10/2025", tipo: "Água e Esgoto" },
-            { cidade: "Barra do Garças", valor: 168.80, mes: "Novembro", emissao: "07/11/2025", vencimento: "24/11/2025", pagamento: "24/11/2025", tipo: "Água e Esgoto" },
-            { cidade: "Barra do Garças", valor: 168.80, mes: "Dezembro", emissao: "04/12/2025", vencimento: "22/12/2025", pagamento: "20/12/2025", tipo: "Água e Esgoto" },
-            { cidade: "Canarana (MT)", valor: 65.90, mes: "Janeiro", emissao: "05/01/2026", vencimento: "13/01/2026", pagamento: "13/01/2026", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 141.38, mes: "Março", emissao: "25/04/2025", vencimento: "28/04/2025", pagamento: "25/04/2025", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 194.85, mes: "Abril", emissao: "25/04/2025", vencimento: "28/05/2025", pagamento: "28/05/2025", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 194.85, mes: "Maio", emissao: "23/05/2025", vencimento: "28/06/2025", pagamento: "28/06/2025", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 194.85, mes: "Junho", emissao: "18/07/2025", vencimento: "28/07/2025", pagamento: "25/07/2025", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 194.85, mes: "Julho", emissao: "19/08/2025", vencimento: "28/08/2025", pagamento: "25/08/2025", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 194.85, mes: "Agosto", emissao: "19/09/2025", vencimento: "28/09/2025", pagamento: "26/09/2025", tipo: "Água e Esgoto" },
-            { cidade: "Tabatinga", valor: 194.85, mes: "Setembro", emissao: "17/10/2025", vencimento: "28/10/2025", pagamento: "28/10/2025", tipo: "Água e Esgoto" }
+            
+        ];
+
+        // Otimização Estrutural: Pré-processamento estático e parsing de datas único para poupar CPU
+        const parsedRawData = rawData.map(item => {
+            const vParts = item.vencimento ? item.vencimento.split('/') : null;
+            const pParts = item.pagamento ? item.pagamento.split('/') : null;
+            const eParts = item.emissao ? item.emissao.split('/') : null;
+            return {
+                ...item,
+                vDate: vParts && vParts.length === 3 ? new Date(vParts[2], vParts[1] - 1, vParts[0]) : null,
+                pDate: pParts && pParts.length === 3 ? new Date(pParts[2], pParts[1] - 1, pParts[0]) : null,
+                eDate: eParts && eParts.length === 3 ? new Date(eParts[2], eParts[1] - 1, eParts[0]) : null
+            };
+        });
+
+        // Tabela Estática de Contratos para cálculo exato do KPI
+        const leaseContracts = [
+            { escritorio: "Distrital de Tefé", valorMensal: 3000, vigencia: 12 },
+            { escritorio: "Distrital de Gov. Valadares", valorMensal: 8000, vigencia: 12 },
+            { escritorio: "Distrital de Tabatinga", valorMensal: 7500, vigencia: 12 },
+            { escritorio: "Distrital de Atalaia do Norte", valorMensal: 5000, vigencia: 12 },
+            { escritorio: "Distrital de Campo Grande", valorMensal: 8000, vigencia: 12 },
+            { escritorio: "Distrital de Redenção", valorMensal: 6000, vigencia: 12 },
+            { escritorio: "Distrital de Colíder", valorMensal: 3900, vigencia: 36 },
+            { escritorio: "Distrital de Barra do Garças", valorMensal: 2500, vigencia: 36 },
+            { escritorio: "Regional Centro Oeste (Cuiabá)", valorMensal: 7000, vigencia: 36 },
+            { escritorio: "Distrital Yanomami/RR / Distrital Leste de Roraima/RR / Regional de Boa Vista", valorMensal: 23800, vigencia: 24 },
+            { escritorio: "Distrital de Altamira (PA)", valorMensal: 6000, vigencia: 24 },
+            { escritorio: "Distrital de Canarana (MT)", valorMensal: 5000, vigencia: 12 },
+            { escritorio: "Distrital de Maceió (AL)", valorMensal: 6000, vigencia: 12 },
+            { escritorio: "Distrital de Parintins (AM)", valorMensal: 5800, vigencia: 24 },
+            { escritorio: "Distrital de São Gabriel da Cachoeira (AM)", valorMensal: 2900, vigencia: 12 },
+            { escritorio: "Distrital de São Luis (MA)", valorMensal: 10908, vigencia: 24 },
+            { escritorio: "Distrital de Cruzeiro do Sul (AC)", valorMensal: 3700, vigencia: 12 },
+            { escritorio: "Distrital de Florianópolis (SC)", valorMensal: 12100, vigencia: 12 },
+            { escritorio: "Distrital de Curitiba", valorMensal: 9600, vigencia: 12 },
+            { escritorio: "Distrital de Salvador (BA)", valorMensal: 11000, vigencia: 12 },
+            { escritorio: "Distrital de Lábrea (AM)", valorMensal: 9000, vigencia: 12 },
+            { escritorio: "Distrital de João Pessoa (PB)", valorMensal: 7500, vigencia: 24 },
+            { escritorio: "Distrital de São Félix do Araguaia (MT)", valorMensal: 9800, vigencia: 12 },
+            { escritorio: "Distrital de Porto Velho (RO)", valorMensal: 0, vigencia: 48 }, // Cessão de uso, valor nulo
+            { escritorio: "Regional Recife (PE)", valorMensal: 17000, vigencia: 24 },
+            { escritorio: "Distrital de Rio Branco (AC)", valorMensal: 6940, vigencia: 12 },
+            { escritorio: "Regional Belém (PA)", valorMensal: 13880, vigencia: 3 },
+            { escritorio: "Distrital de Itaituba (PA)", valorMensal: 4000, vigencia: 24 },
+            { escritorio: "Distrital Cacoal", valorMensal: 4554, vigencia: 24 },
+            { escritorio: "Distrital de Macapá", valorMensal: 11300, vigencia: 24 },
+            { escritorio: "Regional Curitiba (PR)", valorMensal: 9600, vigencia: 12 },
+            { escritorio: "Distrital de Palmas", valorMensal: 7600, vigencia: 12 },
+            { escritorio: "Regional de Salvador", valorMensal: 11000, vigencia: 12 },
+            { escritorio: "Distrital de Belém", valorMensal: 13880, vigencia: 3 }
         ];
 
         // --- Funções Auxiliares React ---
-        const parseDate = (d) => {
-            if (!d) return null;
-            const p = d.split('/');
-            return p.length === 3 ? new Date(p[2], p[1]-1, p[0]) : null;
-        };
-
         const formatDate = (date) => (date && date instanceof Date && !isNaN(date)) ? date.toLocaleDateString('pt-BR') : "—";
         const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
         // --- Componentes React ---
-        const LucideIcon = ({ name, className }) => {
+        const LucideIcon = React.memo(({ name, className }) => {
             const iconRef = useRef(null);
-            useEffect(() => { 
-                if (window.lucide && window.lucide.icons[name] && iconRef.current) {
-                    iconRef.current.innerHTML = window.lucide.icons[name].toSvg({ class: className });
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    try {
+                        const formattedName = name.charAt(0).toUpperCase() + name.slice(1).replace(/-([a-z])/g, g => g[1].toUpperCase());
+                        const lucideIcon = window.lucide.icons[formattedName] || window.lucide.icons[name];
+                        if (lucideIcon) {
+                            iconRef.current.innerHTML = lucideIcon.toSvg({ class: className });
+                        } else {
+                            iconRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
+                            window.lucide.createIcons({ node: iconRef.current });
+                        }
+                    } catch (e) {
+                        iconRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
+                    }
                 }
             }, [name, className]);
             return <span ref={iconRef} className="inline-flex items-center justify-center"></span>;
-        };
+        });
 
-        const SortableHeader = ({ label, field, currentSort, onSort, center = false }) => (
+        const SortableHeader = React.memo(({ label, field, currentSort, onSort, center = false }) => (
             <th className={`px-6 py-5 cursor-pointer hover:text-blue-600 transition-colors ${center ? 'text-center' : ''}`} onClick={() => onSort(field)}>
                 <div className={`flex items-center gap-2 ${center ? 'justify-center' : ''}`}>
                     {label}
                     <LucideIcon name="arrow-up-down" className={`w-3 h-3 ${currentSort.key === field ? 'text-blue-600' : 'text-slate-300'}`} />
                 </div>
             </th>
-        );
+        ));
 
-        const CardKpi = ({ title, value, iconName, color }) => {
+        const CardKpi = React.memo(({ title, value, iconName, color }) => {
             const colors = {
                 blue: 'bg-blue-50 border-blue-100 text-blue-600',
                 emerald: 'bg-emerald-50 border-emerald-100 text-emerald-600',
@@ -1389,22 +1403,22 @@
                     </div>
                 </div>
             );
-        };
+        });
 
-        // Componente Mapa com Resize Automático
-        const LeafletMap = ({ data }) => {
+        // Componente Mapa com Resize Automático Otimizado
+        const LeafletMap = React.memo(({ data }) => {
             const mapRef = useRef(null);
-            const mapInstance = useRef(null);
+            const mapInstanceReact = useRef(null);
 
             useEffect(() => {
                 if (!window.L) return;
 
-                if (!mapInstance.current && mapRef.current) {
+                if (!mapInstanceReact.current && mapRef.current) {
                     if (mapRef.current._leaflet_id) {
                         mapRef.current._leaflet_id = null;
                     }
 
-                    mapInstance.current = window.L.map(mapRef.current, {
+                    mapInstanceReact.current = window.L.map(mapRef.current, {
                         minZoom: 4,
                         maxBounds: [[-35, -75], [5, -30]],
                         maxBoundsViscosity: 1.0
@@ -1412,12 +1426,12 @@
                     
                     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                         attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 19
-                    }).addTo(mapInstance.current);
+                    }).addTo(mapInstanceReact.current);
                 }
 
-                if (mapInstance.current) {
-                    mapInstance.current.eachLayer((layer) => {
-                        if (layer instanceof window.L.Marker) mapInstance.current.removeLayer(layer);
+                if (mapInstanceReact.current) {
+                    mapInstanceReact.current.eachLayer((layer) => {
+                        if (layer instanceof window.L.Marker) mapInstanceReact.current.removeLayer(layer);
                     });
 
                     data.forEach(city => {
@@ -1464,13 +1478,13 @@
 
                         window.L.marker([city.lat, city.lng], { icon, zIndexOffset: zIndexVal })
                             .bindTooltip(tooltipHtml, { direction: 'top', className: 'custom-leaflet-tooltip', offset: [0, -10] })
-                            .addTo(mapInstance.current);
+                            .addTo(mapInstanceReact.current);
                     });
                 }
             }, [data]);
 
             useEffect(() => {
-                const handleResize = () => { if (mapInstance.current) mapInstance.current.invalidateSize(); };
+                const handleResize = () => { if (mapInstanceReact.current) requestAnimationFrame(() => mapInstanceReact.current.invalidateSize()); };
                 window.addEventListener('resize', handleResize);
                 return () => window.removeEventListener('resize', handleResize);
             }, []);
@@ -1494,7 +1508,7 @@
                     </div>
                 </div>
             );
-        };
+        });
 
         const AppUtilidades = () => {
             const [activeTab, setActiveTab] = useState('Locação de Imóveis');
@@ -1504,7 +1518,7 @@
             const [expandedCities, setExpandedCities] = useState(new Set());
             const [sortConfig, setSortConfig] = useState({ key: 'cidade', direction: 'asc' });
 
-            const today = new Date(2026, 1, 11);
+            const today = useMemo(() => new Date(2026, 1, 11), []);
 
             const mapData = useMemo(() => {
                 const result = {};
@@ -1521,7 +1535,7 @@
                     }
                 });
 
-                rawData.forEach(item => {
+                parsedRawData.forEach(item => {
                     let cityName = item.cidade === 'Boa Vista' ? 'Boa Vista (RR)' : item.cidade;
                     if (result[cityName] && result[cityName].items[item.tipo]) result[cityName].items[item.tipo].push(item);
                 });
@@ -1535,10 +1549,7 @@
                         items.forEach(d => {
                             if (d.valor <= 0) return;
                             if (!d.pagamento) hasPending = true;
-                            else {
-                                const v = parseDate(d.vencimento), p = parseDate(d.pagamento);
-                                if (v && p && p > v) hasLate = true;
-                            }
+                            else if (d.vDate && d.pDate && d.pDate > d.vDate) hasLate = true;
                         });
 
                         if (hasLate) city.status[tipo] = 'Em Atraso';
@@ -1555,15 +1566,14 @@
             }, []);
 
             const stats = useMemo(() => {
-                const filtered = rawData.filter(d => {
+                const filtered = parsedRawData.filter(d => {
                     if (d.tipo !== activeTab) return false;
                     const matchCity = filterCity === 'Todas' || d.cidade === filterCity;
                     const matchSearch = d.cidade.toLowerCase().includes(searchTerm.toLowerCase()) || (d.mes && d.mes.toLowerCase().includes(searchTerm.toLowerCase()));
                     let matchStatus = true;
                     if (statusFilter !== 'Todos') {
                         const isPaid = !!d.pagamento;
-                        const v = parseDate(d.vencimento), p = parseDate(d.pagamento);
-                        const isLate = isPaid && v && p && p > v;
+                        const isLate = isPaid && d.vDate && d.pDate && d.pDate > d.vDate;
                         if (statusFilter === 'Pendente') matchStatus = !isPaid;
                         if (statusFilter === 'Pago') matchStatus = isPaid && !isLate;
                         if (statusFilter === 'Atrasado') matchStatus = isLate;
@@ -1575,43 +1585,116 @@
                 const totalPago = filtered.reduce((acc, curr) => curr.pagamento ? acc + curr.valor : acc, 0);
                 const ticketMedio = totalValor / (filtered.filter(d => d.valor > 0).length || 1);
                 
-                const mesesOrdem = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-                const porMes = mesesOrdem.map(m => ({
-                    name: m, valor: filtered.filter(d => d.mes && d.mes.toLowerCase().includes(m.toLowerCase())).reduce((acc, curr) => acc + curr.valor, 0)
-                })).filter(m => m.valor > 0);
+                // Quebra Cronológica por Ano e Mês no Gráfico
+                const monthsMap = {
+                    "janeiro": 1, "fevereiro": 2, "março": 3, "abril": 4, "maio": 5, "junho": 6,
+                    "julho": 7, "agosto": 8, "setembro": 9, "outubro": 10, "novembro": 11, "dezembro": 12
+                };
+                const monthsAbbr = {
+                    "janeiro": "Jan", "fevereiro": "Fev", "março": "Mar", "abril": "Abr", "maio": "Mai", "junho": "Jun",
+                    "julho": "Jul", "agosto": "Ago", "setembro": "Set", "outubro": "Out", "novembro": "Nov", "dezembro": "Dez"
+                };
+
+                const getBillingYear = (item) => {
+                    if (item.vDate) return item.vDate.getFullYear();
+                    if (item.eDate) return item.eDate.getFullYear();
+                    return 2025;
+                };
+
+                const groupedPeriods = {};
+                filtered.forEach(item => {
+                    const year = getBillingYear(item);
+                    const mBase = item.mes ? item.mes.toLowerCase().trim() : "";
+                    const mNum = monthsMap[mBase] || 1;
+                    const mAbbr = monthsAbbr[mBase] || mBase;
+                    
+                    const periodKey = `${year}-${mNum}`;
+                    if (!groupedPeriods[periodKey]) {
+                        groupedPeriods[periodKey] = {
+                            year,
+                            monthNum: mNum,
+                            name: `${mAbbr}/${String(year).substring(2)}`,
+                            valor: 0
+                        };
+                    }
+                    groupedPeriods[periodKey].valor += item.valor;
+                });
+
+                const porMes = Object.values(groupedPeriods).sort((a, b) => {
+                    if (a.year !== b.year) return a.year - b.year;
+                    return a.monthNum - b.monthNum;
+                });
 
                 let noPrazo = 0, emAtraso = 0, pendente = 0;
                 filtered.forEach(d => {
                     if (d.valor <= 0) return;
                     if (!d.pagamento) pendente++;
-                    else {
-                        const v = parseDate(d.vencimento), p = parseDate(d.pagamento);
-                        if (v && p && p > v) emAtraso++; else noPrazo++;
-                    }
+                    else if (d.vDate && d.pDate && d.pDate > d.vDate) emAtraso++; 
+                    else noPrazo++;
                 });
 
                 const statusData = [{ name: "No Prazo", value: noPrazo }, { name: "Em Atraso", value: emAtraso }, { name: "Pendente", value: pendente }].filter(s => s.value > 0);
 
                 const groupedMap = filtered.reduce((acc, curr) => {
-                    if (!acc[curr.cidade]) acc[curr.cidade] = { cidade: curr.cidade, items: [], lastDueDate: null, lastPaymentDate: null };
+                    if (!acc[curr.cidade]) acc[curr.cidade] = { cidade: curr.cidade, items: [], lastDueDate: null, lastDueDateObj: null, lastPaymentDate: null };
                     acc[curr.cidade].items.push(curr);
-                    const vDate = parseDate(curr.vencimento);
-                    if (vDate && (!acc[curr.cidade].lastDueDate || vDate > parseDate(acc[curr.cidade].lastDueDate))) acc[curr.cidade].lastDueDate = curr.vencimento;
-                    const pDate = parseDate(curr.pagamento);
-                    if (pDate && (!acc[curr.cidade].lastPaymentDate || pDate > parseDate(acc[curr.cidade].lastPaymentDate))) acc[curr.cidade].lastPaymentDate = curr.pagamento;
+                    if (curr.vDate && (!acc[curr.cidade].lastDueDateObj || curr.vDate > acc[curr.cidade].lastDueDateObj)) {
+                        acc[curr.cidade].lastDueDateObj = curr.vDate;
+                        acc[curr.cidade].lastDueDate = curr.vencimento;
+                    }
                     return acc;
                 }, {});
 
                 const groupedArray = Object.values(groupedMap).sort((a, b) => {
                     let vA = a[sortConfig.key], vB = b[sortConfig.key];
-                    if (sortConfig.key === 'lastDueDate') { vA = parseDate(vA) || 0; vB = parseDate(vB) || 0; }
+                    if (sortConfig.key === 'lastDueDate') { vA = a.lastDueDateObj || 0; vB = b.lastDueDateObj || 0; }
+                    if (typeof vA === 'string') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
                     return sortConfig.direction === 'asc' ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
                 });
 
-                return { totalValor, totalPago, ticketMedio, pendenteValor: totalValor - totalPago, porMes, statusData, groupedArray };
+                // Função de correspondência avançada para conectar a localidade ao contrato
+                const matchContractToCity = (escritorio, city) => {
+                    const esc = escritorio.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const c = city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    
+                    const cleanCity = c.replace(/\s*\(.*\)/g, "").trim(); 
+                    const cleanEsc = esc.replace(/\s*\(.*\)/g, "").trim(); 
+
+                    if (cleanEsc.includes(cleanCity) || cleanCity.includes(cleanEsc)) {
+                        return true;
+                    }
+                    
+                    if (cleanCity.includes("gov valadares") && cleanEsc.includes("governador valadares")) return true;
+                    if (cleanCity.includes("boa vista") && cleanEsc.includes("boa vista")) return true;
+                    if (cleanCity.includes("cuiaba") && cleanEsc.includes("centro oeste")) return true;
+                    if (cleanCity.includes("sao luis") && cleanEsc.includes("sao luis")) return true;
+                    if (cleanCity.includes("sao felix") && cleanEsc.includes("sao felix")) return true;
+                    if (cleanCity.includes("sao gabriel") && cleanEsc.includes("sao gabriel")) return true;
+                    
+                    return false;
+                };
+
+                // Cálculo dinâmico do valor do contrato para a KPI Card de locações
+                let totalContratosValue = 0;
+                let pendenteCalculado = totalValor - totalPago; // Padrão: Total Faturas - Pago
+                
+                if (activeTab === 'Locação de Imóveis') {
+                    const filteredContracts = leaseContracts.filter(contract => {
+                        const matchCity = filterCity === 'Todas' || matchContractToCity(contract.escritorio, filterCity);
+                        const matchSearch = contract.escritorio.toLowerCase().includes(searchTerm.toLowerCase()) || contract.escritorio.toLowerCase().includes(filterCity.toLowerCase());
+                        return matchCity && matchSearch;
+                    });
+                    totalContratosValue = filteredContracts.reduce((acc, curr) => acc + (curr.valorMensal * curr.vigencia), 0);
+                    // Ajuste: Valor Em Aberto passa a ser o Total dos Contratos - Total Liquidado
+                    pendenteCalculado = totalContratosValue - totalPago;
+                }
+
+                return { totalValor, totalPago, ticketMedio, pendenteValor: pendenteCalculado, porMes, statusData, groupedArray, totalContratosValue };
             }, [activeTab, filterCity, searchTerm, statusFilter, sortConfig]);
 
-            const uniqueCitiesList = ['Todas', ...new Set(rawData.filter(d => d.tipo === activeTab).map(d => d.cidade))].sort();
+            const uniqueCitiesList = useMemo(() => {
+                return ['Todas', ...new Set(parsedRawData.filter(d => d.tipo === activeTab).map(d => d.cidade))].sort();
+            }, [activeTab]);
 
             const toggleCity = (c) => {
                 const n = new Set(expandedCities);
@@ -1641,7 +1724,13 @@
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <CardKpi title={`Total ${activeTab}`} value={formatCurrency(stats.totalValor)} iconName="coins" color="blue" />
+                        {/* KPI card modificado para apresentar o valor real do contrato de locação (ou mensalidade das utilidades) */}
+                        <CardKpi 
+                            title={activeTab === 'Locação de Imóveis' ? "Total de Contratos" : `Total ${activeTab}`} 
+                            value={formatCurrency(activeTab === 'Locação de Imóveis' ? stats.totalContratosValue : stats.totalValor)} 
+                            iconName="coins" 
+                            color="blue" 
+                        />
                         <CardKpi title="Total Liquidado" value={formatCurrency(stats.totalPago)} iconName="verified" color="emerald" />
                         <CardKpi title="Em Aberto" value={formatCurrency(stats.pendenteValor)} iconName="timer" color="amber" />
                         <CardKpi title="Ticket Médio" value={formatCurrency(stats.ticketMedio)} iconName="activity" color="purple" />
@@ -1661,7 +1750,8 @@
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 700}} />
                                         <YAxis hide />
                                         <Tooltip cursor={{fill: '#f8fafc'}} />
-                                        <Bar dataKey="valor" fill="#005fb2" radius={[12, 12, 0, 0]} barSize={40}>
+                                        {/* Otimização: isAnimationActive={false} para acelerar render inicial */}
+                                        <Bar dataKey="valor" fill="#005fb2" radius={[12, 12, 0, 0]} barSize={40} isAnimationActive={false}>
                                             <LabelList dataKey="valor" position="top" formatter={(v) => `R$ ${v.toFixed(0)}`} style={{ fill: '#475569', fontSize: '9px', fontWeight: '900' }} />
                                         </Bar>
                                     </BarChart>
@@ -1676,7 +1766,7 @@
                             <div className="h-[280px] w-full relative">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={stats.statusData} innerRadius={65} outerRadius={95} paddingAngle={8} dataKey="value" stroke="none" label={({name, value}) => `${name}: ${value}`}>
+                                        <Pie data={stats.statusData} innerRadius={65} outerRadius={95} paddingAngle={8} dataKey="value" stroke="none" label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`} isAnimationActive={false}>
                                             {stats.statusData.map((e, i) => <Cell key={i} fill={COLORS_STATUS[e.name]} />)}
                                         </Pie>
                                         <Tooltip />
@@ -1727,9 +1817,8 @@
                                     {stats.groupedArray.map((city) => {
                                         const isOpen = expandedCities.has(city.cidade);
                                         let nextDate = "—", alert = false;
-                                        if (city.lastDueDate) {
-                                            const last = parseDate(city.lastDueDate);
-                                            const next = new Date(last); next.setDate(last.getDate() + 30);
+                                        if (city.lastDueDateObj) {
+                                            const next = new Date(city.lastDueDateObj); next.setDate(city.lastDueDateObj.getDate() + 30);
                                             nextDate = formatDate(next);
                                             if (Math.ceil((next - today) / 86400000) <= 5) alert = true;
                                         }
@@ -1775,7 +1864,7 @@
                                                                     </thead>
                                                                     <tbody className="divide-y divide-slate-50">
                                                                         {city.items.map((item, i) => {
-                                                                            const late = item.pagamento && parseDate(item.pagamento) > parseDate(item.vencimento);
+                                                                            const late = item.pagamento && item.vDate && item.pDate && item.pDate > item.vDate;
                                                                             return (
                                                                                 <tr key={`${activeTab}-${city.cidade}-${i}`} className="hover:bg-slate-50 transition-colors">
                                                                                     <td className="px-8 py-4 font-bold text-slate-800 uppercase tracking-tight">{item.mes}</td>
